@@ -102,7 +102,6 @@ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from beanie import init_beanie
 from urllib.parse import urlparse
 import certifi
-import ssl
 
 from app.core.config import settings
 
@@ -129,23 +128,18 @@ class DatabaseManager:
     async def connect(self) -> None:
         """Connect to MongoDB using connection string"""
         try:
-            # Updated MongoDB URL with SSL parameters
-            mongodb_url = "mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE"
+            # Clean MongoDB URL
+            mongodb_url = "mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority"
             
-            # Create SSL context
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-            
-            # Connection options
+            # Correct connection options for PyMongo/Motor
             connection_options = {
                 'tlsCAFile': certifi.where(),
-                'ssl': True,
-                'ssl_cert_reqs': ssl.CERT_NONE,
-                'ssl_match_hostname': False,
-                'serverSelectionTimeoutMS': 30000,  # 30 seconds
-                'connectTimeoutMS': 30000,  # 30 seconds
-                'socketTimeoutMS': 30000,  # 30 seconds
+                'tls': True,
+                'tlsAllowInvalidCertificates': True,
+                'tlsAllowInvalidHostnames': True,
+                'serverSelectionTimeoutMS': 30000,
+                'connectTimeoutMS': 30000,
+                'socketTimeoutMS': 30000,
                 'maxPoolSize': 10,
                 'minPoolSize': 1,
                 'retryWrites': True,
@@ -154,7 +148,7 @@ class DatabaseManager:
             
             self.client = AsyncIOMotorClient(mongodb_url, **connection_options)
             
-            # Get database - hardcoded database name
+            # Get database
             self.database_name = "royalprompts"
             self.database = self.client[self.database_name]
             
