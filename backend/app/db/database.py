@@ -32,8 +32,18 @@ class DatabaseManager:
             # Extract database name from URL
             self.database_name = self._extract_database_name(settings.MONGODB_URL)
             
-            # Create client with connection string
-            self.client = AsyncIOMotorClient(settings.MONGODB_URL)
+            # Create client with connection string and SSL configuration
+            import ssl
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            self.client = AsyncIOMotorClient(
+                settings.MONGODB_URL,
+                tls=True,
+                tlsAllowInvalidCertificates=True,
+                tlsInsecure=True
+            )
             
             # Get database from connection string
             self.database = self.client[self.database_name]
