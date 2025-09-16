@@ -1,0 +1,158 @@
+name: 🚀 Backend CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/backend
+
+jobs:
+  # Test and Build Job
+  test-and-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: 📦 Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: 🔧 Install dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio httpx
+
+    - name: 🧪 Run tests
+      working-directory: ./backend
+      run: |
+        # Run basic syntax and import tests
+        python -m py_compile app/main.py
+        python -c "import app.main; print('✅ Backend imports successfully')"
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test
+        SECRET_KEY: test-secret-key
+
+    - name: 🏗️ Build Docker image
+      run: |
+        cd backend
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
+
+    - name: 🏷️ Log in to Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: 📤 Push Docker image
+      if: github.event_name != 'pull_request'
+      run: |
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  # Deploy to DigitalOcean
+  deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Deploy to DigitalOcean
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Navigate to project directory
+          cd /root/royalprompts-main || cd /home/royalprompts/royalprompts-main
+          
+          # Pull latest changes
+          git pull origin main
+          
+          # Login to GitHub Container Registry
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          
+          # Pull latest backend image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          
+          # Stop existing backend container
+          docker-compose -f docker-compose.production.yml stop backend || true
+          
+          # Update backend service with new image
+          docker-compose -f docker-compose.production.yml up -d backend
+          
+          # Wait for backend to be healthy
+          echo "Waiting for backend to be healthy..."
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✅ Backend is healthy!"
+              break
+            fi
+            echo "Attempt $i: Backend not ready yet..."
+            sleep 10
+          done
+          
+          # Show deployment status
+          docker-compose -f docker-compose.production.yml ps
+          docker-compose -f docker-compose.production.yml logs --tail=20 backend
+
+    - name: 🔍 Verify deployment
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Test backend health endpoint
+          curl -f http://localhost:8000/health || exit 1
+          echo "✅ Backend deployment verified!"
+          
+          # Show recent logs
+          docker-compose -f docker-compose.production.yml logs --tail=10 backend
+
+  # Notification
+  notify:
+    needs: [test-and-build, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: 📢 Deployment Status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "🎉 Backend deployed successfully!"
+          echo "🔗 API: http://${{ secrets.DROPLET_HOST }}/api"
+          echo "🏥 Health: http://${{ secrets.DROPLET_HOST }}/api/health"
+        else
+          echo "❌ Deployment failed!"
+        fi
