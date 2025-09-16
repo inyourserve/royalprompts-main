@@ -32,14 +32,9 @@ class DatabaseManager:
             # Extract database name from URL
             self.database_name = self._extract_database_name(settings.MONGODB_URL)
             
-            # Create client with connection string - use correct SSL parameters
-            self.client = AsyncIOMotorClient(
-                settings.MONGODB_URL,
-                ssl=True,
-                ssl_cert_reqs=None,
-                serverSelectionTimeoutMS=10000,
-                connectTimeoutMS=10000
-            )
+            # Create client with hardcoded MongoDB URL - simple approach
+            mongodb_url = "mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority"
+            self.client = AsyncIOMotorClient(mongodb_url)
             
             # Get database from connection string
             self.database = self.client[self.database_name]

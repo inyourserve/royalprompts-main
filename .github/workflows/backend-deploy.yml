@@ -67,10 +67,10 @@ jobs:
         script: |
           cd /root/royalprompts-main
           
-          # Create .env file with your actual MongoDB Atlas connection
+          # Create .env file with hardcoded MongoDB connection
           cat > .env << EOF
-          MONGODB_URL=${{ secrets.MONGODB_URL }}
-          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          MONGODB_URL=mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority
+          SECRET_KEY=royalprompts-super-secret-production-key-2024-secure-random-string
           FRONTEND_URL=http://${{ secrets.DROPLET_HOST }}
           NEXT_PUBLIC_API_URL=http://${{ secrets.DROPLET_HOST }}/api
           CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}", "https://${{ secrets.DROPLET_HOST }}"]
