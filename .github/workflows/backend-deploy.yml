@@ -26,8 +26,34 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
         script: |
-          # Navigate to project directory
-          cd /root/royalprompts-main || cd /home/royalprompts/royalprompts-main
+          # Debug: Show current directory and available directories
+          echo "Current directory: $(pwd)"
+          echo "Available directories in /root:"
+          ls -la /root/ || echo "Cannot access /root"
+          echo "Available directories in /home:"
+          ls -la /home/ || echo "Cannot access /home"
+          
+          # Find and navigate to project directory
+          if [ -d "/root/royalprompts-main" ]; then
+            echo "✅ Found project in /root/royalprompts-main"
+            cd /root/royalprompts-main
+          elif [ -d "/home/royalprompts/royalprompts-main" ]; then
+            echo "✅ Found project in /home/royalprompts/royalprompts-main"
+            cd /home/royalprompts/royalprompts-main
+          elif [ -d "/root" ]; then
+            echo "✅ Found /root directory, cloning repository..."
+            cd /root
+            # Clone the repository if it doesn't exist
+            if [ ! -d "royalprompts-main" ]; then
+              git clone https://github.com/${{ github.repository }}.git royalprompts-main
+            fi
+            cd royalprompts-main
+          else
+            echo "❌ Could not find project directory"
+            exit 1
+          fi
+          
+          echo "✅ Working directory: $(pwd)"
           
           # Pull latest changes
           git pull origin main
@@ -61,6 +87,16 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
         script: |
+          # Navigate to project directory
+          if [ -d "/root/royalprompts-main" ]; then
+            cd /root/royalprompts-main
+          elif [ -d "/home/royalprompts/royalprompts-main" ]; then
+            cd /home/royalprompts/royalprompts-main
+          else
+            echo "❌ Could not find project directory for verification"
+            exit 1
+          fi
+          
           # Test backend health endpoint
           curl -f http://localhost:8000/health || exit 1
           echo "✅ Backend deployment verified!"
