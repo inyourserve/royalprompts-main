@@ -1,17 +1,17 @@
 # Core FastAPI and ASGI server
-fastapi==0.116.1
-uvicorn==0.35.0
-uvloop==0.21.0
-httptools==0.6.4
-websockets==15.0.1
-watchfiles==1.1.0
+fastapi>=0.104.0,<1.0.0
+uvicorn[standard]>=0.24.0,<1.0.0
+uvloop>=0.20.0,<1.0.0
+httptools>=0.6.0,<1.0.0
+websockets>=15.0.0,<16.0.0
+watchfiles>=1.0.0,<2.0.0
 
 # Data validation and settings
-pydantic==2.11.9
-pydantic-settings==2.10.1
-pydantic_core==2.33.2
-annotated-types==0.7.0
-typing_extensions==4.15.0
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.1.0,<3.0.0
+pydantic_core>=2.30.0,<3.0.0
+annotated-types>=0.7.0,<1.0.0
+typing_extensions>=4.15.0,<5.0.0
 
 # HTTP and form handling
 python-multipart==0.0.20
@@ -29,15 +29,15 @@ cffi==2.0.0
 pycparser==2.23
 
 # MongoDB and database
-motor==3.7.1
-pymongo==4.15.0
-beanie==2.0.0
-lazy-model==0.3.0
-typing-inspection==0.4.1
+motor>=3.3.0,<4.0.0
+pymongo>=4.6.0,<5.0.0
+beanie>=1.24.0,<3.0.0
+lazy-model>=0.3.0,<1.0.0
+typing-inspection>=0.4.0,<1.0.0
 
 # File handling and images
-aiofiles==24.1.0
-pillow==11.3.0
+aiofiles>=23.0.0,<25.0.0
+pillow>=10.0.0,<12.0.0
 
 # Environment and configuration
 python-dotenv==1.1.1
@@ -56,7 +56,7 @@ email-validator==2.3.0
 PyYAML==6.0.2
 
 # DNS resolution
-dnspython==2.8.0
+dnspython>=2.4.0,<3.0.0
 
 # Click for CLI
 click==8.2.1
