@@ -1,0 +1,127 @@
+name: 🎨 Frontend Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'admin/**'
+      - '.github/workflows/frontend-deploy.yml'
+      - 'docker-compose.production.yml'
+  workflow_dispatch:
+
+jobs:
+  # Deploy Frontend to DigitalOcean
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🚀 Deploy Frontend to DigitalOcean
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Create project directory
+          mkdir -p /root/royalprompts-main
+          cd /root/royalprompts-main
+          
+          # Stop existing frontend container
+          docker-compose -f docker-compose.production.yml stop frontend || true
+          docker rm -f royalprompts_frontend || true
+          
+          echo "✅ Stopped existing frontend container!"
+
+    - name: 📤 Copy frontend files
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "admin/"
+        target: "/root/royalprompts-main/"
+        strip_components: 0
+
+    - name: 📤 Copy docker-compose file
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "docker-compose.production.yml"
+        target: "/root/royalprompts-main/"
+
+    - name: 🚀 Start frontend
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          cd /root/royalprompts-main
+          
+          # Create .env file with consistent configuration
+          cat > .env << EOF
+          MONGODB_URL=mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority
+          SECRET_KEY=royalprompts-super-secret-production-key-2024-secure-random-string
+          FRONTEND_URL=http://${{ secrets.DROPLET_HOST }}:3000
+          NEXT_PUBLIC_API_URL=http://${{ secrets.DROPLET_HOST }}:8000
+          CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}:3000", "http://${{ secrets.DROPLET_HOST }}:8000", "http://${{ secrets.DROPLET_HOST }}"]
+          EOF
+          
+          # Build and start frontend only
+          docker-compose -f docker-compose.production.yml up --build -d frontend
+          
+          # Wait for frontend to be healthy
+          echo "Waiting for frontend to be healthy..."
+          for i in {1..30}; do
+            if curl -f http://localhost:3000 > /dev/null 2>&1; then
+              echo "✅ Frontend is healthy after $i attempts!"
+              break
+            fi
+            echo "Attempt $i: Frontend not ready yet..."
+            sleep 10
+          done
+          
+          # Show deployment status
+          echo "=== Container Status ==="
+          docker ps
+          echo "=== Frontend Logs ==="
+          docker logs --tail=30 royalprompts_frontend
+
+    - name: 🔍 Verify deployment
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Test frontend health endpoint
+          if curl -f http://localhost:3000 > /dev/null 2>&1; then
+            echo "✅ Frontend deployment verified!"
+            echo "🎨 Admin Panel: http://${{ secrets.DROPLET_HOST }}:3000"
+            echo "🔗 API: http://${{ secrets.DROPLET_HOST }}:8000"
+            echo "🏥 Health check: http://${{ secrets.DROPLET_HOST }}:8000/health"
+          else
+            echo "❌ Frontend health check failed!"
+            echo "=== Debug Info ==="
+            docker ps
+            docker logs --tail=50 royalprompts_frontend
+            exit 1
+          fi
+
+    - name: 📢 Deployment Status
+      run: |
+        echo "🎉 Frontend deployed successfully!"
+        echo "🎨 Admin Panel: http://${{ secrets.DROPLET_HOST }}:3000"
+        echo "🔗 API: http://${{ secrets.DROPLET_HOST }}:8000"
+        echo "🏥 Health: http://${{ secrets.DROPLET_HOST }}:8000/health"
