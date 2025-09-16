@@ -69,7 +69,7 @@ jobs:
           
           # Create .env file with your actual MongoDB Atlas connection
           cat > .env << EOF
-          MONGODB_URL=${{ secrets.MONGODB_URL }}
+          MONGODB_URL=${{ secrets.MONGODB_URL }}&ssl=true&ssl_cert_reqs=CERT_NONE&tlsAllowInvalidCertificates=true
           SECRET_KEY=${{ secrets.SECRET_KEY }}
           FRONTEND_URL=http://${{ secrets.DROPLET_HOST }}
           NEXT_PUBLIC_API_URL=http://${{ secrets.DROPLET_HOST }}/api
