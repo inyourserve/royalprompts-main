@@ -29,14 +29,13 @@ class DatabaseManager:
     async def connect(self) -> None:
         """Connect to MongoDB using connection string"""
         try:
-            # Extract database name from URL
-            self.database_name = self._extract_database_name(settings.MONGODB_URL)
-            
-            # Create client with hardcoded MongoDB URL - simple approach
+            # Create client with hardcoded MongoDB URL - using certifi for SSL certificates
+            import certifi
             mongodb_url = "mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority"
-            self.client = AsyncIOMotorClient(mongodb_url)
+            self.client = AsyncIOMotorClient(mongodb_url, tlsCAFile=certifi.where())
             
-            # Get database from connection string
+            # Get database - hardcoded database name
+            self.database_name = "royalprompts"
             self.database = self.client[self.database_name]
             
             # Test connection
