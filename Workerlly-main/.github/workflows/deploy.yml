@@ -1,0 +1,335 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - test
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8
+          flake8 . --ignore=E501,F401,W503,E722,F841,E302,F811,E131
+
+      - name: Build Docker image
+        run: |
+          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+            docker build -t bloggervikash/workerlly:latest .
+          else
+            docker build -t bloggervikash/workerlly:test .
+          fi
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push Docker image
+        run: |
+          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+            docker push bloggervikash/workerlly:latest
+          else
+            docker push bloggervikash/workerlly:test
+          fi
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.DO_DROPLET_SSH_KEY }}
+
+      - name: Add Production Droplet to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Production Server
+        env:
+          DO_DROPLET_IP: ${{ secrets.DO_DROPLET_IP }}
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ env.DO_DROPLET_IP }} << EOF
+            docker pull bloggervikash/workerlly:latest
+            docker stop workerlly || true
+            docker rm workerlly || true
+            docker run -d --name workerlly \
+              -p 8000:8000 \
+              -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+              -e REDIS_HOST='${{ secrets.REDIS_HOST }}' \
+              -e REDIS_PORT='${{ secrets.REDIS_PORT }}' \
+              -e REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+              -e FIREBASE_CREDENTIALS_JSON='${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' \
+              -e FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}' \
+              bloggervikash/workerlly:latest
+          EOF
+
+  deploy-test:
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.DO_TEST_DROPLET_SSH_KEY }}
+
+      - name: Add Test Droplet to known_hosts
+        run: |
+          ssh-keyscan -H ${{ secrets.DO_TEST_DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to Test Server
+        env:
+          DO_TEST_DROPLET_IP: ${{ secrets.DO_TEST_DROPLET_IP }}
+        run: |
+          ssh -o StrictHostKeyChecking=no root@${{ env.DO_TEST_DROPLET_IP }} << EOF
+            docker pull bloggervikash/workerlly:test
+            docker stop workerlly-test || true
+            docker rm workerlly-test || true
+            docker run -d --name workerlly-test \
+              -p 8001:8000 \
+              -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+              -e REDIS_HOST='${{ secrets.REDIS_HOST }}' \
+              -e REDIS_PORT='${{ secrets.REDIS_PORT }}' \
+              -e REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+              -e FIREBASE_CREDENTIALS_JSON='${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' \
+              -e FIREBASE_PROJECT_ID='${{ secrets.FIREBASE_PROJECT_ID }}' \
+              bloggervikash/workerlly:test
+          EOF
+
+#name: CI/CD Pipeline
+#
+#on:
+#  push:
+#    branches:
+#      - main
+#      - test
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.10'
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#
+#      - name: Lint with flake8
+#        run: |
+#          pip install flake8
+#          flake8 . --ignore=E501,F401,W503,E722,F841,E302,F811,E131
+#
+#      - name: Build Docker image
+#        run: |
+#          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+#            docker build -t bloggervikash/workerlly:latest .
+#          else
+#            docker build -t bloggervikash/workerlly:test .
+#          fi
+#
+#      - name: Log in to DockerHub
+#        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+#
+#      - name: Push Docker image
+#        run: |
+#          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+#            docker push bloggervikash/workerlly:latest
+#          else
+#            docker push bloggervikash/workerlly:test
+#          fi
+#
+#  deploy-prod:
+#    if: github.ref == 'refs/heads/main'
+#    runs-on: ubuntu-latest
+#    needs: build
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up SSH
+#        uses: webfactory/ssh-agent@v0.5.3
+#        with:
+#          ssh-private-key: ${{ secrets.DO_DROPLET_SSH_KEY }}
+#
+#      - name: Add Production Droplet to known_hosts
+#        run: |
+#          ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
+#
+#      - name: Deploy to Production Server
+#        env:
+#          DO_DROPLET_IP: ${{ secrets.DO_DROPLET_IP }}
+#        run: |
+#          ssh -o StrictHostKeyChecking=no root@${{ env.DO_DROPLET_IP }} << EOF
+#            docker pull bloggervikash/workerlly:latest
+#            docker stop workerlly || true
+#            docker rm workerlly || true
+#            docker run -d --name workerlly \
+#              -p 8000:8000 \
+#              -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+#              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+#              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+#              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+#              -e REDIS_HOST='${{ secrets.REDIS_HOST }}' \
+#              -e REDIS_PORT='${{ secrets.REDIS_PORT }}' \
+#              -e REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+#              bloggervikash/workerlly:latest
+#          EOF
+#
+#  deploy-test:
+#    if: github.ref == 'refs/heads/test'
+#    runs-on: ubuntu-latest
+#    needs: build
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up SSH
+#        uses: webfactory/ssh-agent@v0.5.3
+#        with:
+#          ssh-private-key: ${{ secrets.DO_TEST_DROPLET_SSH_KEY }}
+#
+#      - name: Add Test Droplet to known_hosts
+#        run: |
+#          ssh-keyscan -H ${{ secrets.DO_TEST_DROPLET_IP }} >> ~/.ssh/known_hosts
+#
+#      - name: Deploy to Test Server
+#        env:
+#          DO_TEST_DROPLET_IP: ${{ secrets.DO_TEST_DROPLET_IP }}
+#        run: |
+#          ssh -o StrictHostKeyChecking=no root@${{ env.DO_TEST_DROPLET_IP }} << EOF
+#            docker pull bloggervikash/workerlly:test
+#            docker stop workerlly-test || true
+#            docker rm workerlly-test || true
+#            docker run -d --name workerlly-test \
+#              -p 8001:8000 \
+#              -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+#              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+#              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+#              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+#              -e REDIS_HOST='${{ secrets.REDIS_HOST }}' \
+#              -e REDIS_PORT='${{ secrets.REDIS_PORT }}' \
+#              -e REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+#              bloggervikash/workerlly:test
+#          EOF
+
+
+
+
+#name: CI/CD Pipeline
+#
+#on:
+#  push:
+#    branches:
+#      - main  # Set the branch you want to trigger the deployment
+#
+#jobs:
+#  build:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up Python
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: '3.10'
+#
+#      - name: Install dependencies
+#        run: |
+#          python -m pip install --upgrade pip
+#          pip install -r requirements.txt
+#
+#      - name: Lint with flake8
+#        run: |
+#          pip install flake8
+#          flake8 . --ignore=E501,F401,W503,E722,F841,E302,F811,E131
+#
+#      - name: Build Docker image
+#        run: docker build -t bloggervikash/workerlly:latest .
+#
+#      - name: Log in to DockerHub
+#        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+#
+#      - name: Push Docker image
+#        run: docker push bloggervikash/workerlly:latest
+#
+#  deploy:
+#    runs-on: ubuntu-latest
+#    needs: build
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up SSH
+#        uses: webfactory/ssh-agent@v0.5.3
+#        with:
+#          ssh-private-key: ${{ secrets.DO_DROPLET_SSH_KEY }}
+#
+#      - name: Add DigitalOcean Droplet's SSH key to known_hosts
+#        run: |
+#          ssh-keyscan -H ${{ secrets.DO_DROPLET_IP }} >> ~/.ssh/known_hosts
+#
+#      - name: Deploy to DigitalOcean Droplet
+#        env:
+#          DO_DROPLET_IP: ${{ secrets.DO_DROPLET_IP }}
+#        run: |
+#          ssh -o StrictHostKeyChecking=no root@${{ env.DO_DROPLET_IP }} << EOF
+#            docker pull bloggervikash/workerlly:latest
+#            docker stop workerlly || true
+#            docker rm workerlly || true
+#            docker run -d --name workerlly \
+#              -p 8000:8000 \
+#              -e SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+#              -e AWS_ACCESS_KEY='${{ secrets.AWS_ACCESS_KEY }}' \
+#              -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+#              -e S3_BUCKET_NAME='${{ secrets.S3_BUCKET_NAME }}' \
+#              -e REDIS_HOST='${{ secrets.REDIS_HOST }}' \
+#              -e REDIS_PORT='${{ secrets.REDIS_PORT }}' \
+#              -e REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+#              bloggervikash/workerlly:latest
+#          EOF
+

@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+venv/
+.idea/
+.vscode/
+*.log
+
+# Firebase
+firebase-service-account.json
+google-services.json
+GoogleService-Info.plist

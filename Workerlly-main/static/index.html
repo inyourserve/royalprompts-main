@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+        }
+        .sidebar-sticky {
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 48px);
+            padding-top: .5rem;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        .nav-link {
+            font-weight: 500;
+            color: #333;
+        }
+        .nav-link:hover {
+            color: #007bff;
+        }
+        .nav-link.active {
+            color: #007bff;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+                <div class="position-sticky pt-3 sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-bs-toggle="tab" data-bs-target="#dashboard">
+                                <i class="bi bi-house-door me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#categories">
+                                <i class="bi bi-grid me-2"></i>Categories
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#rates">
+                                <i class="bi bi-currency-dollar me-2"></i>Rates
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#cities">
+                                <i class="bi bi-building me-2"></i>Cities
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="tab" data-bs-target="#faqs">
+                                <i class="bi bi-question-circle me-2"></i>FAQs
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div class="tab-content" id="myTabContent">
+                    <!-- Dashboard -->
+                    <div class="tab-pane fade show active" id="dashboard">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Dashboard</h1>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-3 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Categories</h5>
+                                        <p class="card-text" id="categoryCount">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total Cities</h5>
+                                        <p class="card-text" id="cityCount">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-4">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Total FAQs</h5>
+                                        <p class="card-text" id="faqCount">Loading...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categories -->
+                    <div class="tab-pane fade" id="categories">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Categories</h1>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#categoryModal">Add Category</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Thumbnail</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryTableBody">
+                                    <!-- Categories will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Rates -->
+                    <div class="tab-pane fade" id="rates">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Rates</h1>
+                        </div>
+                        <div class="mb-3">
+                            <label for="rateCity" class="form-label">Select City:</label>
+                            <select class="form-select" id="rateCity" onchange="loadRates()">
+                                <option value="">Choose a city...</option>
+                            </select>
+                        </div>
+                        <div id="ratesList" class="row">
+                            <!-- Rates will be populated here -->
+                        </div>
+                        <button class="btn btn-primary mt-3" onclick="saveRates()">Save Rates</button>
+                    </div>
+
+                    <!-- Cities -->
+                    <div class="tab-pane fade" id="cities">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">Cities</h1>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#cityModal">Add City</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cityTableBody">
+                                    <!-- Cities will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- FAQs -->
+                    <div class="tab-pane fade" id="faqs">
+                        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                            <h1 class="h2">FAQs</h1>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#faqModal">Add FAQ</button>
+                        </div>
+                        <div id="faqAccordion">
+                            <!-- FAQs will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryThumbnail" class="form-label">Thumbnail</label>
+                            <input type="file" class="form-control" id="categoryThumbnail">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCategory()">Save Category</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- City Modal -->
+    <div class="modal fade" id="cityModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add City</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="cityForm">
+                        <div class="mb-3">
+                            <label for="cityName" class="form-label">City Name</label>
+                            <input type="text" class="form-control" id="cityName" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCity()">Save City</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div class="modal fade" id="faqModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add FAQ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="faqForm">
+                        <div class="mb-3">
+                            <label for="faqQuestion" class="form-label">Question</label>
+                            <input type="text" class="form-control" id="faqQuestion" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="faqAnswer" class="form-label">Answer</label>
+                            <textarea class="form-control" id="faqAnswer" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="saveFAQ()">Save FAQ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dashboard
+        async function loadDashboardData() {
+            try {
+                const [categories, cities, faqs] = await Promise.all([
+                    fetch('/api/v1/categories').then(res => res.json()),
+                    fetch('/api/v1/cities').then(res => res.json()),
+                    fetch('/api/v1/faq/categories').then(res => res.json())
+                ]);
+                document.getElementById('categoryCount').textContent = categories.categories.length;
+                document.getElementById('cityCount').textContent = cities.cities.length;
+                document.getElementById('faqCount').textContent = faqs.length;
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Categories
+        async function loadCategories() {
+            try {
+                const response = await fetch('/api/v1/categories');
+                const data = await response.json();
+                const tableBody = document.getElementById('categoryTableBody');
+                tableBody.innerHTML = '';
+                data.categories.forEach(category => {
+                    const row = `
+                        <tr>
+                            <td>${category.name}</td>
+                            <td><img src="${category.thumbnail}" alt="${category.name}" width="50"></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editCategory('${category._id}')">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteCategory('${category._id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+    // ... (previous code remains the same)
+
+    async function saveCategory() {
+        const name = document.getElementById('categoryName').value;
+        const thumbnail = document.getElementById('categoryThumbnail').files[0];
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('thumbnail', thumbnail);
+
+        try {
+            const response = await fetch('/api/v1/categories', {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+                loadCategories();
+                document.getElementById('categoryForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+                showToast('Category saved successfully', 'success');
+            } else {
+                showToast('Failed to save category', 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving category:', error);
+            showToast('Error saving category', 'danger');
+        }
+    }
+
+    async function editCategory(id) {
+        // Implement category editing logic
+    }
+
+    async function deleteCategory(id) {
+        if (confirm('Are you sure you want to delete this category?')) {
+            try {
+                const response = await fetch(`/api/v1/categories/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadCategories();
+                    showToast('Category deleted successfully', 'success');
+                } else {
+                    showToast('Failed to delete category', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                showToast('Error deleting category', 'danger');
+            }
+        }
+    }
+
+    // Rates
+    async function loadRates() {
+        const cityId = document.getElementById('rateCity').value;
+        if (!cityId) return;
+
+        try {
+            const [categoriesResponse, ratesResponse] = await Promise.all([
+                fetch('/api/v1/categories').then(res => res.json()),
+                fetch(`/api/v1/rates/${cityId}`).then(res => res.json())
+            ]);
+
+            const ratesList = document.getElementById('ratesList');
+            ratesList.innerHTML = '';
+
+            categoriesResponse.categories.forEach(category => {
+                const rate = ratesResponse.rates.find(r => r.category_id === category._id);
+                const rateValue = rate ? rate.rate_per_hour : '';
+
+                const rateItem = `
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${category.name}</h5>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="rate-${category._id}" value="${rateValue}" min="0" step="0.01">
+                                    <span class="input-group-text">/hr</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                ratesList.innerHTML += rateItem;
+            });
+        } catch (error) {
+            console.error('Error loading rates:', error);
+            showToast('Error loading rates', 'danger');
+        }
+    }
+
+    async function saveRates() {
+        const cityId = document.getElementById('rateCity').value;
+        if (!cityId) {
+            showToast('Please select a city', 'warning');
+            return;
+        }
+
+        const rates = [];
+        document.querySelectorAll('[id^="rate-"]').forEach(input => {
+            const categoryId = input.id.split('-')[1];
+            const rate = input.value;
+            if (rate) {
+                rates.push({ category_id: categoryId, rate_per_hour: parseFloat(rate) });
+            }
+        });
+
+        try {
+            const response = await fetch('/api/v1/rates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city_id: cityId, rates })
+            });
+
+            if (response.ok) {
+                showToast('Rates saved successfully', 'success');
+            } else {
+                showToast('Failed to save rates', 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving rates:', error);
+            showToast('Error saving rates', 'danger');
+        }
+    }
+
+    // Cities
+    async function loadCities() {
+        try {
+            const response = await fetch('/api/v1/cities');
+            const data = await response.json();
+            const tableBody = document.getElementById('cityTableBody');
+            const rateCity = document.getElementById('rateCity');
+
+            tableBody.innerHTML = '';
+            rateCity.innerHTML = '<option value="">Choose a city...</option>';
+
+            data.cities.forEach(city => {
+                const row = `
+                    <tr>
+                        <td>${city.name}</td>
+                        <td>${city.is_served ? 'Served' : 'Not Served'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary btn-action" onclick="editCity('${city._id}')">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteCity('${city._id}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+
+                rateCity.innerHTML += `<option value="${city._id}">${city.name}</option>`;
+            });
+        } catch (error) {
+            console.error('Error loading cities:', error);
+            showToast('Error loading cities', 'danger');
+        }
+    }
+
+    async function saveCity() {
+        const name = document.getElementById('cityName').value;
+
+        try {
+            const response = await fetch('/api/v1/cities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            if (response.ok) {
+                loadCities();
+                document.getElementById('cityForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('cityModal')).hide();
+                showToast('City saved successfully', 'success');
+            } else {
+                showToast('Failed to save city', 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving city:', error);
+            showToast('Error saving city', 'danger');
+        }
+    }
+
+    async function editCity(id) {
+        // Implement city editing logic
+    }
+
+    async function deleteCity(id) {
+        if (confirm('Are you sure you want to delete this city?')) {
+            try {
+                const response = await fetch(`/api/v1/cities/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadCities();
+                    showToast('City deleted successfully', 'success');
+                } else {
+                    showToast('Failed to delete city', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting city:', error);
+                showToast('Error deleting city', 'danger');
+            }
+        }
+    }
+
+    // FAQs
+    async function loadFAQs() {
+        try {
+            const response = await fetch('/api/v1/faq/categories');
+            const categories = await response.json();
+            const faqAccordion = document.getElementById('faqAccordion');
+            faqAccordion.innerHTML = '';
+
+            categories.forEach(async (category, index) => {
+                const questionsResponse = await fetch(`/api/v1/faq/categories/${category._id}/questions`);
+                const questions = await questionsResponse.json();
+
+                const categoryHtml = `
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading${index}">
+                            <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                                ${category.name}
+                            </button>
+                        </h2>
+                        <div id="collapse${index}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                ${questions.map(q => `
+                                    <div class="mb-3">
+                                        <h5>${q.question}</h5>
+                                        <p>${q.answer}</p>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editFAQ('${q._id}')">Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteFAQ('${q._id}')">Delete</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                faqAccordion.innerHTML += categoryHtml;
+            });
+        } catch (error) {
+            console.error('Error loading FAQs:', error);
+            showToast('Error loading FAQs', 'danger');
+        }
+    }
+
+    async function saveFAQ() {
+        const question = document.getElementById('faqQuestion').value;
+        const answer = document.getElementById('faqAnswer').value;
+        // Note: You'll need to add a category selection in the FAQ form and get its value here
+
+        try {
+            const response = await fetch('/api/v1/faq/questions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, answer, category_id: 'CATEGORY_ID_HERE' })
+            });
+
+            if (response.ok) {
+                loadFAQs();
+                document.getElementById('faqForm').reset();
+                bootstrap.Modal.getInstance(document.getElementById('faqModal')).hide();
+                showToast('FAQ saved successfully', 'success');
+            } else {
+                showToast('Failed to save FAQ', 'danger');
+            }
+        } catch (error) {
+            console.error('Error saving FAQ:', error);
+            showToast('Error saving FAQ', 'danger');
+        }
+    }
+
+    async function editFAQ(id) {
+        // Implement FAQ editing logic
+    }
+
+    async function deleteFAQ(id) {
+        if (confirm('Are you sure you want to delete this FAQ?')) {
+            try {
+                const response = await fetch(`/api/v1/faq/questions/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadFAQs();
+                    showToast('FAQ deleted successfully', 'success');
+                } else {
+                    showToast('Failed to delete FAQ', 'danger');
+                }
+            } catch (error) {
+                console.error('Error deleting FAQ:', error);
+                showToast('Error deleting FAQ', 'danger');
+            }
+        }
+    }
+
+    function showToast(message, type) {
+        // Implement a toast notification system here
+        // You can use Bootstrap's toast component or a library like toastr
+        console.log(`${type.toUpperCase()}: ${message}`);
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        loadDashboardData();
+        loadCategories();
+        loadCities();
+        loadFAQs();
+    });
+</script>

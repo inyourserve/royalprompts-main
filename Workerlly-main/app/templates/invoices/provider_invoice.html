@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workerlly - Payment Receipt</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            background: white;
+        }
+
+        .p-5 {
+            padding: 1.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            height: 40px;
+        }
+
+        .grid {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .col-6 {
+            width: 50%;
+        }
+
+        .info-block {
+            margin-bottom: 1.5rem;
+        }
+
+        .info-block h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #000;
+        }
+
+        .info-block p {
+            margin: 0.2rem 0;
+            color: #666;
+        }
+
+        .separator {
+            border-bottom: 1px dashed #ccc;
+            margin: 0.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            background: #f8f9fa;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            border: 1px solid #dee2e6;
+        }
+
+        th {
+            background: #e9ecef;
+            font-weight: 600;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .amount-words {
+            font-style: italic;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .disclaimer {
+            margin-top: 2rem;
+            font-size: 11px;
+            color: #666;
+        }
+
+
+
+
+
+
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="p-5">
+        <!-- Header -->
+        <div class="header">
+            <img src="{{ logo_base64 }}" alt="Workerlly Logo" class="logo">
+            <h1 style="font-size: 16px;">(Receipt on Behalf of Service Provider)</h1>
+        </div>
+
+        <!-- Company Info -->
+        <div class="info-block">
+            <h2>Workerlly Tech Pvt Ltd</h2>
+            <p>SCO 47, Sector 11, Panchkula</p>
+            <p>Pin Code 134109 Haryana</p>
+        </div>
+
+        <!-- Grid Layout -->
+        <div class="grid">
+            <!-- Customer Info -->
+            <div class="col-6">
+                <div class="info-block">
+                    <h2>Customer Name</h2>
+                    <p>{{ provider_name }} </p>
+                    <div class="separator"></div>
+
+                    <h2>Invoice No.</h2>
+                    <p>{{ invoice_number }}</p>
+                    <div class="separator"></div>
+
+                    <h2>Delivery Address</h2>
+                    <p>{{ address.address_line1 }}</p>
+                    <p>{{ address.address_line2 }}</p>
+                    <div class="separator"></div>
+
+                    <h2>Receipt Date</h2>
+                    <p>{{ invoice_date }}</p>
+                    <div class="separator"></div>
+
+                    <h2>State Name & Code</h2>
+                    <p>Haryana 06</p>
+                    <div class="separator"></div>
+
+                    <h2>Place of Supply</h2>
+                    <p>Haryana 06</p>
+                </div>
+            </div>
+
+            <!-- Service Provider Info -->
+            <div class="col-6">
+                <div class="info-block">
+                    <h2>DELIVERY SERVICE PROVIDER</h2>
+                    <div class="separator"></div>
+
+                    <h2>Business GSTIN</h2>
+                    <p>GSTIN: XXXXXX</p>
+                    <div class="separator"></div>
+
+                    <h2>Service Provider/Business Name</h2>
+                    <p>{{ customer_name }}</p>
+                    <div class="separator"></div>
+
+                    <h2>Address</h2>
+                    <p>{{ city_name }}</p>
+                    <div class="separator"></div>
+
+                    <h2>State Name & Code</h2>
+                    <p>Haryana 06</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+            <thead>
+            <tr>
+                <th>Items</th>
+                <th class="text-end">Taxable Value</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>Service Charges - {{ category_name }}</td>
+                <td class="text-end">
+                    <p>Gross Amount: Rs. {{ "%.2f"|format(total_amount) }}</p>
+                    <p>Discount: Rs. 0.0</p>
+                    <p>Taxable Value: Rs. {{ "%.2f"|format(total_amount) }}</p>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Total Amount</strong></td>
+                <td class="text-end"><strong>Rs. {{ "%.2f"|format(total_amount) }}</strong></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="amount-words">
+            ({{ amount_in_words }} Only)
+        </div>
+
+        <div class="disclaimer">
+            <p>*This is not an official invoice or tax document. This payment receipt is for money you paid to the
+                service provider for their services.</p>
+            <p>*For any tax invoice you can demand the worker/ service provider directly.</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>

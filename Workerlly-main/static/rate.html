@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .category-item {
+            transition: background-color 0.3s ease;
+        }
+        .category-item:hover {
+            background-color: #f1f3f5;
+        }
+        .rate-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="#">Rate Management</a>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="text-center mb-4">Rate Entry for City</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="city" class="form-label">Select City:</label>
+                <select class="form-select" id="city" onchange="loadCategoriesAndRates()">
+                    <option value="">Choose a city...</option>
+                    <!-- City options will be populated here -->
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="categories" class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Category Rates</h5>
+            <!-- Categories and input fields for rates will be populated here -->
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button class="btn btn-primary btn-lg" onclick="submitRates()">
+            <i class="bi bi-check-circle me-2"></i>Submit Rates
+        </button>
+    </div>
+</div>
+
+<!-- Toast container for notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+        async function fetchCities() {
+            try {
+                const response = await fetch('/api/v1/cities');
+                const data = await response.json();
+                const citySelect = document.getElementById('city');
+                data.cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city._id;
+                    option.textContent = city.name;
+                    citySelect.appendChild(option);
+                });
+            } catch (error) {
+                showToast('Failed to fetch cities', 'danger');
+            }
+        }
+
+        async function loadCategoriesAndRates() {
+            const cityId = document.getElementById('city').value;
+            const categoryDiv = document.getElementById('categories');
+            categoryDiv.innerHTML = '<div class="card-body"><h5 class="card-title mb-4">Category Rates</h5></div>'; // Reset categories
+
+            try {
+                const [categoriesResponse, ratesResponse] = await Promise.all([
+                    fetch('/api/v1/categories'),
+                    fetch(`/api/v1/rates/${cityId}`)
+                ]);
+                const categoriesData = await categoriesResponse.json();
+                const ratesData = await ratesResponse.json();
+
+                const rates = ratesData.rates.reduce((acc, rate) => {
+                    acc[rate.category_id] = {
+                        rate_per_hour: rate.rate_per_hour,
+                        min_hourly_rate: rate.min_hourly_rate,
+                        max_hourly_rate: rate.max_hourly_rate
+                    };
+                    return acc;
+                }, {});
+
+                const categoryList = document.createElement('ul');
+                categoryList.className = 'list-group list-group-flush';
+
+                categoriesData.categories.forEach(category => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item category-item';
+                    const categoryRates = rates[category._id] || {};
+                    listItem.innerHTML = `
+                        <div class="mb-3">
+                            <label class="form-label">${category.name}</label>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="rate-${category._id}" class="rate-label">Standard Rate</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="rate-${category._id}" value="${categoryRates.rate_per_hour || ''}" min="0" step="0.01">
+                                        <span class="input-group-text">/hr</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="min-rate-${category._id}" class="rate-label">Minimum Rate</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="min-rate-${category._id}" value="${categoryRates.min_hourly_rate || ''}" min="0" step="0.01">
+                                        <span class="input-group-text">/hr</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="max-rate-${category._id}" class="rate-label">Maximum Rate</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="max-rate-${category._id}" value="${categoryRates.max_hourly_rate || ''}" min="0" step="0.01">
+                                        <span class="input-group-text">/hr</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    categoryList.appendChild(listItem);
+                });
+
+                categoryDiv.querySelector('.card-body').appendChild(categoryList);
+            } catch (error) {
+                showToast('Failed to load categories and rates', 'danger');
+            }
+        }
+
+        async function submitRates() {
+            const cityId = document.getElementById('city').value;
+            if (!cityId) {
+                showToast('Please select a city', 'warning');
+                return;
+            }
+
+            try {
+                const categoriesResponse = await fetch('/api/v1/categories');
+                const categoriesData = await categoriesResponse.json();
+
+                for (const category of categoriesData.categories) {
+                    const rateInput = document.getElementById(`rate-${category._id}`);
+                    const minRateInput = document.getElementById(`min-rate-${category._id}`);
+                    const maxRateInput = document.getElementById(`max-rate-${category._id}`);
+
+                    const rate = rateInput.value;
+                    const minRate = minRateInput.value;
+                    const maxRate = maxRateInput.value;
+
+                    if (rate || minRate || maxRate) {
+                        await fetch('/api/v1/rates', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                city_id: cityId,
+                                category_id: category._id,
+                                rate_per_hour: rate || null,
+                                min_hourly_rate: minRate || null,
+                                max_hourly_rate: maxRate || null
+                            })
+                        });
+                    }
+                }
+                showToast('Rates submitted successfully', 'success');
+            } catch (error) {
+                showToast('Failed to submit rates', 'danger');
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('liveToast');
+            const toastBody = toast.querySelector('.toast-body');
+            toastBody.textContent = message;
+            toast.className = `toast text-white bg-${type}`;
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+        }
+
+        fetchCities();
+
+</script>
+</body>
+</html>

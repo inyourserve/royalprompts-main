@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bid Updates</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <h1 class="mb-4">Bid Updates for a Job</h1>
+    <div class="form-group">
+        <label for="jobId">Job ID:</label>
+        <input type="text" class="form-control" id="jobId" placeholder="Enter Job ID">
+    </div>
+    <div class="form-group">
+        <label for="token">Provider Token:</label>
+        <input type="text" class="form-control" id="token" placeholder="Enter Token">
+    </div>
+    <button class="btn btn-primary" onclick="connectWebSocket()">Connect</button>
+
+    <h2 class="mt-4">Bid Updates:</h2>
+    <ul id="bidUpdates" class="list-group">
+        <!-- Bid updates will appear here -->
+    </ul>
+</div>
+
+<!-- Bootstrap JS, Popper.js, and jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script>
+    let socket;
+
+    function connectWebSocket() {
+        const jobId = document.getElementById('jobId').value;
+        const token = document.getElementById('token').value;
+
+        if (!jobId || !token) {
+            alert('Please enter both Job ID and Token');
+            return;
+        }
+
+        socket = new WebSocket(`ws://127.0.0.1:8000/api/v1/ws/bids/${jobId}?token=${token}`);
+
+        socket.onopen = function() {
+            console.log('WebSocket connection established');
+        };
+
+        socket.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+            displayBidUpdate(message);
+        };
+
+        socket.onclose = function() {
+            console.log('WebSocket connection closed');
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+    }
+
+    function displayBidUpdate(message) {
+        const bidUpdates = document.getElementById('bidUpdates');
+        const listItem = document.createElement('li');
+        listItem.className = 'list-group-item';
+        listItem.textContent = `Bid ID: ${message.data.bid_id}, Status: ${message.data.status}, Job ID: ${message.data.job_id}`;
+        bidUpdates.appendChild(listItem);
+    }
+</script>
+</body>
+</html>

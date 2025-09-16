@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Creation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+        .card:hover { transform: translateY(-5px); }
+        .form-label { font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Create a New Job</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <form id="jobForm" class="needs-validation" novalidate>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Category</label>
+                        <select class="form-select" id="category" name="category_id" required>
+                            <option value="">Select a category</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a category.</div>
+                    </div>
+
+                    <div class="mb-3" id="subCategoryContainer" style="display: none;">
+                        <label class="form-label">Subcategories</label>
+                        <div id="subCategories">
+                            <!-- Subcategories will be populated here -->
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobTitle" class="form-label">Job Title</label>
+                        <input type="text" class="form-control" id="jobTitle" name="title" required>
+                        <div class="invalid-feedback">Please enter a job title.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="jobDescription" class="form-label">Job Description</label>
+                        <textarea class="form-control" id="jobDescription" name="description" rows="4" required></textarea>
+                        <div class="invalid-feedback">Please enter a job description.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <select class="form-select" id="address" name="address_id" required>
+                            <option value="">Select an address</option>
+                        </select>
+                        <div class="invalid-feedback">Please select an address.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="hourlyRate" class="form-label">Hourly Rate</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="hourlyRate" name="hourly_rate" step="0.01" min="0" required>
+                            <div class="invalid-feedback">Please enter a valid hourly rate.</div>
+                        </div>
+                        <small id="suggestedRate" class="form-text text-muted"></small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Create Job</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let userToken = ''; // Assume this is set after user authentication
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategories();
+            fetchAddresses();
+            setupEventListeners();
+        });
+
+        async function fetchCategories() {
+            try {
+                const response = await fetch('/api/v1/categories', {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                const data = await response.json();
+                const categorySelect = document.getElementById('category');
+                categorySelect.innerHTML = '<option value="">Select a category</option>';
+                data.categories.forEach(category => {
+                    categorySelect.innerHTML += `<option value="${category._id}">${category.name}</option>`;
+                });
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                showToast('Failed to load categories', 'danger');
+            }
+        }
+
+        async function fetchAddresses() {
+            try {
+                const response = await fetch('/api/v1/provider/addresses', {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                const addresses = await response.json();
+                const addressSelect = document.getElementById('address');
+                addressSelect.innerHTML = '<option value="">Select an address</option>';
+                addresses.forEach(address => {
+                    addressSelect.innerHTML += `<option value="${address._id}">${address.address_line1}, ${address.city}</option>`;
+                });
+            } catch (error) {
+                console.error('Error fetching addresses:', error);
+                showToast('Failed to load addresses', 'danger');
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('category').addEventListener('change', function() {
+                if (this.value) {
+                    fetchSubcategories(this.value);
+                } else {
+                    document.getElementById('subCategoryContainer').style.display = 'none';
+                }
+            });
+
+            document.getElementById('jobForm').addEventListener('submit', submitJob);
+        }
+
+        async function fetchSubcategories(categoryId) {
+            try {
+                const response = await fetch(`/api/v1/categories/${categoryId}/subcategories`, {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                const subCategories = await response.json();
+                const subCategoriesDiv = document.getElementById('subCategories');
+                subCategoriesDiv.innerHTML = '';
+                subCategories.forEach(subCategory => {
+                    subCategoriesDiv.innerHTML += `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${subCategory._id}" id="subCategory${subCategory._id}" name="sub_category_ids">
+                            <label class="form-check-label" for="subCategory${subCategory._id}">
+                                ${subCategory.name}
+                            </label>
+                        </div>`;
+                });
+                document.getElementById('subCategoryContainer').style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching subcategories:', error);
+                showToast('Failed to load subcategories', 'danger');
+            }
+        }
+
+        async function submitJob(event) {
+            event.preventDefault();
+            if (this.checkValidity() === false) {
+                event.stopPropagation();
+                this.classList.add('was-validated');
+                return;
+            }
+
+            const formData = new FormData(this);
+            const jobData = Object.fromEntries(formData.entries());
+            jobData.sub_category_ids = Array.from(formData.getAll('sub_category_ids'));
+
+            try {
+                const response = await fetch('/api/v1/jobs', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify(jobData)
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    showToast('Job created successfully!', 'success');
+                    this.reset();
+                    this.classList.remove('was-validated');
+                } else {
+                    showToast(result.detail || 'Failed to create job', 'danger');
+                }
+            } catch (error) {
+                console.error('Error creating job:', error);
+                showToast('An error occurred while creating the job', 'danger');
+            }
+        }
+
+        function showToast(message, type) {
+            const toastContainer = document.createElement('div');
+            toastContainer.style.position = 'fixed';
+            toastContainer.style.top = '20px';
+            toastContainer.style.right = '20px';
+            toastContainer.style.zIndex = '1050';
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+
+            toast.addEventListener('hidden.bs.toast', function () {
+                toastContainer.remove();
+            });
+        }
+    </script>
+</body>
+</html>

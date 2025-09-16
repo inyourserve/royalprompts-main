@@ -29,7 +29,7 @@ class DatabaseManager:
     async def connect(self) -> None:
         """Connect to MongoDB using connection string"""
         try:
-            # Create client with hardcoded MongoDB URL - using certifi for SSL certificates
+            # Create client with hardcoded MongoDB URL - using same approach as Workerlly
             import certifi
             mongodb_url = "mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority"
             self.client = AsyncIOMotorClient(mongodb_url, tlsCAFile=certifi.where())

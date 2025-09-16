@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workerlly - Tax Invoice</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            background: white;
+        }
+
+        .p-5 {
+            padding: 1.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            height: 30px;
+        }
+
+        .grid {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .col-6 {
+            width: 50%;
+        }
+
+        .info-block {
+            margin-bottom: 1.5rem;
+        }
+
+        .info-block h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #000;
+        }
+
+        .info-block p {
+            margin: 0.2rem 0;
+            color: #666;
+        }
+
+        .provider-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 0.75rem;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .amount-block {
+            background: #f8f9fa;
+            padding: 1rem;
+            text-align: center;
+            border-radius: 4px;
+            margin-bottom: 1.5rem;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .footer {
+            border-top: 1px solid #dee2e6;
+            padding-top: 1rem;
+            text-align: center;
+        }
+
+        .footer p {
+            margin: 0.3rem 0;
+        }
+
+        .small {
+            font-size: 11px;
+        }
+
+        .text-muted {
+            color: #666;
+        }
+
+
+
+
+
+
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="p-5">
+        <!-- Header -->
+        <div class="header">
+            <img src="{{ logo_base64 }}"
+                 alt="Workerlly Logo" class="logo">
+            <h1 style="font-size: 16px; font-weight: 600;">Original Tax Invoice</h1>
+        </div>
+
+        <!-- Grid Layout -->
+        <div class="grid">
+            <!-- Company & Customer Info -->
+            <div class="col-6">
+                <div class="info-block">
+                    <h2>Workerlly Tech Pvt Ltd</h2>
+                    <p>SCO 47, Sector 11, Panchkula</p>
+                    <p>Pin Code 134109 Haryana</p>
+                    <p>GSTIN: XXXXXXXXXXXX</p>
+                </div>
+
+                <div class="info-block">
+                    <h2 class="small text-muted">Customer Details</h2>
+                    <p><strong>{{ customer_name }}</strong></p>
+                    <p>{{ address.address_line1 }}</p>
+                    <p>{{ address.address_line2 }}</p>
+                </div>
+
+                <div class="info-block">
+                    <h2 class="small text-muted">Invoice Details</h2>
+                    <p>Invoice No: {{ invoice_number }}</p>
+                    <p>Date: {{ invoice_date }}</p>
+                    <p>State: Haryana (06)</p>
+                </div>
+            </div>
+
+            <!-- Service Provider Info -->
+            <div class="col-6">
+                <div class="provider-box">
+                    <h2 class="small">DELIVERY SERVICE PROVIDER</h2>
+                    <p>Business GSTIN: XXXXXXXXXXXX</p>
+                    <p>Workerlly Tech Pvt Ltd</p>
+                    <p>SCO 47, Sector 11, Panchkula</p>
+                    <p>Haryana (06)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table>
+            <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-end">Amount</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <p style="margin: 0;"><strong>Convenience & Platform Fee</strong></p>
+                    <p class="small text-muted" style="margin: 0;">SAC: 999799</p>
+                </td>
+                <td class="text-end">
+                    <p style="margin: 0;">Gross Amount: ₹{{ "%.2f"|format(transaction.base_fee) }}</p>
+                    <p style="margin: 0;">Discount: -₹{{ "%.2f"|format(transaction.discount) }}</p>
+                    <p style="margin: 0;">Taxable Value: ₹{{ "%.2f"|format(transaction.base_fee - transaction.discount)
+                        }}</p>
+                    <p style="margin: 0;">CGST @9%: ₹{{ "%.2f"|format(transaction.gst_amount/2) }}</p>
+                    <p style="margin: 0;">SGST @9%: ₹{{ "%.2f"|format(transaction.gst_amount/2) }}</p>
+                </td>
+            </tr>
+            <tr style="background: #f8f9fa;">
+                <td><strong>Total Amount</strong></td>
+                <td class="text-end"><strong>₹{{ "%.2f"|format(transaction.total_fee) }}</strong></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <!-- Amount in Words -->
+        <div class="amount-block">
+            {{ amount_in_words }} Only
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Signature of Supplier/Authorized Representative</strong></p>
+            <p class="small text-muted">This is a computer-generated invoice</p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
