@@ -1,68 +1,40 @@
-# Core FastAPI and ASGI server
+# Using Workerlly's exact working requirements.txt as base
+annotated-types==0.7.0
+anyio==4.4.0
+asgiref==3.8.1
+bcrypt==4.2.1
+certifi==2024.7.4
+cffi==1.17.1
+charset-normalizer==3.3.2
+click==8.1.7
+cryptography==44.0.0
+dnspython==2.6.1
+email_validator==2.2.0
 fastapi==0.111.1
-uvicorn==0.27.1
-uvloop>=0.20.0,<1.0.0
-httptools>=0.6.0,<1.0.0
-websockets>=15.0.0,<16.0.0
-watchfiles>=1.0.0,<2.0.0
-
-# Data validation and settings
+fastapi-cli==0.0.4
+h11==0.14.0
+httptools==0.6.1
+httpx==0.27.0
+idna==3.7
+motor==3.3.2
+beanie==1.24.0
+lazy-model==0.2.0
+typing-inspection==0.4.0
+passlib==1.7.4
+pillow==10.4.0
 pydantic==2.8.2
 pydantic-settings==2.4.0
 pydantic_core==2.20.1
-annotated-types>=0.7.0,<1.0.0
-typing_extensions>=4.15.0,<5.0.0
-
-# HTTP and form handling
-python-multipart==0.0.20
-starlette==0.37.2
-anyio==4.4.0
-sniffio==1.3.1
-h11==0.16.0
-
-# Authentication and security
-python-jose==3.5.0
-passlib==1.7.4
-bcrypt==4.3.0
-cryptography==45.0.7
-cffi==2.0.0
-pycparser==2.23
-
-# MongoDB and database
-motor==3.3.2
 pymongo==4.8.0
-beanie>=1.24.0,<3.0.0
-lazy-model>=0.3.0,<1.0.0
-typing-inspection>=0.4.0,<1.0.0
-
-# File handling and images
-aiofiles>=23.0.0,<25.0.0
-pillow>=10.0.0,<12.0.0
-
-# Environment and configuration
-python-dotenv>=1.0.0,<2.0.0
-
-# HTTP client and utilities
-requests>=2.30.0,<3.0.0
-urllib3>=2.0.0,<3.0.0
-certifi>=2023.0.0,<2026.0.0
-charset-normalizer>=3.0.0,<4.0.0
-idna>=3.0.0,<4.0.0
-
-# Email validation
-email-validator>=2.0.0,<3.0.0
-
-# YAML parsing
-PyYAML>=6.0.0,<7.0.0
-
-# DNS resolution
-dnspython>=2.4.0,<3.0.0
-
-# Click for CLI
-click>=8.0.0,<8.2.0
-
-# Cryptographic utilities
-ecdsa==0.19.1
-pyasn1==0.6.1
-rsa==4.9.1
-six==1.17.0
+python-dotenv==1.0.1
+python-jose==3.3.0
+python-multipart==0.0.9
+requests==2.32.3
+sniffio==1.3.1
+starlette==0.37.2
+typing_extensions==4.12.2
+urllib3==2.2.2
+uvicorn==0.27.1
+uvloop==0.19.0
+watchfiles==0.22.0
+websockets==12.0
