@@ -121,3 +121,4 @@ echo ""
 print_success "🎉 CI/CD setup completed!"
 print_status "Your SSH key is saved at: $SSH_KEY_PATH"
 print_warning "Keep this key secure and never commit it to your repository!"
+

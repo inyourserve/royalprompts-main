@@ -1,13 +1,68 @@
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
-python-multipart>=0.0.6
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
-motor>=3.3.0
-pymongo>=4.6.0
-beanie>=1.24.0
-python-dotenv>=1.0.0
-pillow>=10.0.0
-aiofiles>=23.0.0
+# Core FastAPI and ASGI server
+fastapi==0.116.1
+uvicorn==0.35.0
+uvloop==0.21.0
+httptools==0.6.4
+websockets==15.0.1
+watchfiles==1.1.0
+
+# Data validation and settings
+pydantic==2.11.9
+pydantic-settings==2.10.1
+pydantic_core==2.33.2
+annotated-types==0.7.0
+typing_extensions==4.15.0
+
+# HTTP and form handling
+python-multipart==0.0.20
+starlette==0.47.3
+anyio==4.10.0
+sniffio==1.3.1
+h11==0.16.0
+
+# Authentication and security
+python-jose==3.5.0
+passlib==1.7.4
+bcrypt==4.3.0
+cryptography==45.0.7
+cffi==2.0.0
+pycparser==2.23
+
+# MongoDB and database
+motor==3.7.1
+pymongo==4.15.0
+beanie==2.0.0
+lazy-model==0.3.0
+typing-inspection==0.4.1
+
+# File handling and images
+aiofiles==24.1.0
+pillow==11.3.0
+
+# Environment and configuration
+python-dotenv==1.1.1
+
+# HTTP client and utilities
+requests==2.32.5
+urllib3==2.5.0
+certifi==2025.8.3
+charset-normalizer==3.4.3
+idna==3.10
+
+# Email validation
+email-validator==2.3.0
+
+# YAML parsing
+PyYAML==6.0.2
+
+# DNS resolution
+dnspython==2.8.0
+
+# Click for CLI
+click==8.2.1
+
+# Cryptographic utilities
+ecdsa==0.19.1
+pyasn1==0.6.1
+rsa==4.9.1
+six==1.17.0
