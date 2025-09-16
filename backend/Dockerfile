@@ -19,7 +19,6 @@ RUN apt-get update \
 # Install Python dependencies - same approach as Workerlly
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir pymongo==4.8.0 \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
