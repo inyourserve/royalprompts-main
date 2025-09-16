@@ -1,4 +1,5 @@
 # Using Workerlly's exact working requirements.txt as base
+aiofiles==24.1.0
 annotated-types==0.7.0
 anyio==4.4.0
 asgiref==3.8.1
