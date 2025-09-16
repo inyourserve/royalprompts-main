@@ -67,16 +67,14 @@ jobs:
         script: |
           cd /root/royalprompts-main
           
-          # Create .env file if it doesn't exist
-          if [ ! -f .env ]; then
-            cat > .env << 'EOF'
-          MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/royalprompts?retryWrites=true&w=majority
-          SECRET_KEY=your-super-secret-production-key-change-this-to-something-random-and-secure
-          FRONTEND_URL=https://yourdomain.com
-          NEXT_PUBLIC_API_URL=https://yourdomain.com/api
-          CORS_ORIGINS=["https://yourdomain.com", "https://www.yourdomain.com"]
+          # Create .env file with your actual MongoDB Atlas connection
+          cat > .env << EOF
+          MONGODB_URL=${{ secrets.MONGODB_URL }}
+          SECRET_KEY=${{ secrets.SECRET_KEY }}
+          FRONTEND_URL=http://${{ secrets.DROPLET_HOST }}
+          NEXT_PUBLIC_API_URL=http://${{ secrets.DROPLET_HOST }}/api
+          CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}", "https://${{ secrets.DROPLET_HOST }}"]
           EOF
-          fi
           
           # Build and start backend
           docker-compose -f docker-compose.production.yml up --build -d backend
