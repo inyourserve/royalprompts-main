@@ -29,7 +29,6 @@ from app.api.admin.categories import router as admin_categories_router
 from app.api.admin.settings import router as admin_settings_router
 from app.api.admin.social_links import router as admin_social_links_router
 from app.api.admin.users import router as admin_users_router
-from app.api.cors_test import router as cors_test_router
 
 # Configure logging
 logging.basicConfig(
@@ -94,9 +93,6 @@ app.include_router(admin_categories_router, prefix="/api/admin/categories", tags
 app.include_router(admin_settings_router, prefix="/api/admin/settings", tags=["Admin Settings"])
 app.include_router(admin_social_links_router, prefix="/api/admin/social-links", tags=["Admin Social Links"])
 app.include_router(admin_users_router, prefix="/api/admin/users", tags=["Admin Users"])
-
-# CORS test endpoint
-app.include_router(cors_test_router, prefix="/api", tags=["CORS Test"])
 
 
 # Root endpoints

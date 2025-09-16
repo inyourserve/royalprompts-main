@@ -188,7 +188,7 @@ jobs:
           SECRET_KEY=royalprompts-super-secret-production-key-2024-secure-random-string
           FRONTEND_URL=http://${{ secrets.DROPLET_HOST }}:3000
           NEXT_PUBLIC_API_URL=http://${{ secrets.DROPLET_HOST }}:8000
-          CORS_ORIGINS=http://${{ secrets.DROPLET_HOST }}:3000,http://${{ secrets.DROPLET_HOST }}:8000,http://${{ secrets.DROPLET_HOST }}
+          CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}:3000", "http://${{ secrets.DROPLET_HOST }}:8000", "http://${{ secrets.DROPLET_HOST }}"]
           EOF
           
           # Build and start backend only
