@@ -5,7 +5,7 @@ on:
     branches: [ main ]
     paths:
       - 'backend/**'
-      - '.github/workflows/backend-simple-deploy.yml'
+      - '.github/workflows/backend-deploy.yml'
   workflow_dispatch:
 
 jobs:
@@ -26,42 +26,59 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
         script: |
-          # Debug: Show current directory and available directories
-          echo "Current directory: $(pwd)"
-          echo "Available directories in /root:"
-          ls -la /root/ || echo "Cannot access /root"
-          echo "Available directories in /home:"
-          ls -la /home/ || echo "Cannot access /home"
-          
-          # Find and navigate to project directory
-          if [ -d "/root/royalprompts-main" ]; then
-            echo "✅ Found project in /root/royalprompts-main"
-            cd /root/royalprompts-main
-          elif [ -d "/home/royalprompts/royalprompts-main" ]; then
-            echo "✅ Found project in /home/royalprompts/royalprompts-main"
-            cd /home/royalprompts/royalprompts-main
-          elif [ -d "/root" ]; then
-            echo "✅ Found /root directory, cloning repository..."
-            cd /root
-            # Clone the repository if it doesn't exist
-            if [ ! -d "royalprompts-main" ]; then
-              git clone https://github.com/${{ github.repository }}.git royalprompts-main
-            fi
-            cd royalprompts-main
-          else
-            echo "❌ Could not find project directory"
-            exit 1
-          fi
-          
-          echo "✅ Working directory: $(pwd)"
-          
-          # Pull latest changes
-          git pull origin main
+          # Create project directory
+          mkdir -p /root/royalprompts-main
+          cd /root/royalprompts-main
           
           # Stop existing backend container
           docker-compose -f docker-compose.production.yml stop backend || true
+          docker rm -f royalprompts-backend || true
           
-          # Rebuild and start backend service
+          echo "✅ Backend deployment completed!"
+
+    - name: 📤 Copy backend files
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "backend/"
+        target: "/root/royalprompts-main/backend/"
+        strip_components: 1
+
+    - name: 📤 Copy docker-compose file
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "docker-compose.production.yml"
+        target: "/root/royalprompts-main/"
+
+    - name: 🚀 Start backend
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          cd /root/royalprompts-main
+          
+          # Create .env file if it doesn't exist
+          if [ ! -f .env ]; then
+            cat > .env << 'EOF'
+          MONGODB_URL=mongodb+srv://username:password@cluster.mongodb.net/royalprompts?retryWrites=true&w=majority
+          SECRET_KEY=your-super-secret-production-key-change-this-to-something-random-and-secure
+          FRONTEND_URL=https://yourdomain.com
+          NEXT_PUBLIC_API_URL=https://yourdomain.com/api
+          CORS_ORIGINS=["https://yourdomain.com", "https://www.yourdomain.com"]
+          EOF
+          fi
+          
+          # Build and start backend
           docker-compose -f docker-compose.production.yml up --build -d backend
           
           # Wait for backend to be healthy
@@ -87,22 +104,9 @@ jobs:
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
         script: |
-          # Navigate to project directory
-          if [ -d "/root/royalprompts-main" ]; then
-            cd /root/royalprompts-main
-          elif [ -d "/home/royalprompts/royalprompts-main" ]; then
-            cd /home/royalprompts/royalprompts-main
-          else
-            echo "❌ Could not find project directory for verification"
-            exit 1
-          fi
-          
           # Test backend health endpoint
           curl -f http://localhost:8000/health || exit 1
           echo "✅ Backend deployment verified!"
-          
-          # Show recent logs
-          docker-compose -f docker-compose.production.yml logs --tail=10 backend
 
     - name: 📢 Deployment Status
       run: |
