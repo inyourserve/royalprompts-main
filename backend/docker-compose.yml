@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # MongoDB database
+  mongodb:
+    image: mongo:6.0
+    container_name: royalprompts_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: royalprompts
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - royalprompts_network
+
+  # FastAPI backend
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: royalprompts_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:password123@mongodb:27017/royalprompts?authSource=admin
+      SECRET_KEY: your-super-secret-key-change-this-in-production
+      ENVIRONMENT: development
+      DEBUG: "true"
+      CORS_ORIGINS: '["http://localhost:3000", "http://localhost:3001"]'
+    volumes:
+      - ./uploads:/app/uploads
+      - .:/app
+    depends_on:
+      - mongodb
+    networks:
+      - royalprompts_network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: royalprompts_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - royalprompts_network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  royalprompts_network:
+    driver: bridge

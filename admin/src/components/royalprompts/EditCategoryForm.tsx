@@ -1,0 +1,265 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import FormLayout from "../form/FormLayout";
+import FormField from "../form/FormField";
+import FormCheckbox from "../form/FormCheckbox";
+import { FolderIcon } from "@/icons";
+import { categoryApi, CategoryUpdate } from "@/services";
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  order: number;
+  is_active: boolean;
+  icon?: string;
+  color?: string;
+}
+
+
+
+interface EditCategoryFormProps {
+  categoryId: string;
+}
+
+export default function EditCategoryForm({ categoryId }: EditCategoryFormProps) {
+  const router = useRouter();
+  const [formData, setFormData] = useState<CategoryFormData>({
+    name: "",
+    description: "",
+    order: 1,
+    is_active: true,
+    icon: "",
+    color: "#3B82F6",
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Load category data
+  useEffect(() => {
+    const loadCategoryData = async () => {
+      setIsLoadingData(true);
+      
+      try {
+        const category = await categoryApi.getCategoryById(categoryId);
+        setFormData({
+          name: category.name,
+          description: category.description || "",
+          order: category.order,
+          is_active: category.is_active,
+          icon: category.icon || "",
+          color: "#3B82F6", // Default color, can be extended later
+        });
+      } catch (error) {
+        console.error("Error loading category:", error);
+        // Category not found, redirect to categories list
+        router.push("/categories");
+        return;
+      }
+      
+      setIsLoadingData(false);
+    };
+
+    loadCategoryData();
+  }, [categoryId, router]);
+
+  const handleInputChange = (field: keyof CategoryFormData, value: string | number | boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ""
+      }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Category name is required";
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = "Description is required";
+    }
+
+    if (formData.order < 1) {
+      newErrors.order = "Order must be at least 1";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const updateData: CategoryUpdate = {
+        name: formData.name,
+        description: formData.description,
+        order: formData.order,
+        is_active: formData.is_active
+      };
+      
+      await categoryApi.updateCategory(categoryId, updateData);
+      
+      setIsLoading(false);
+      setIsSuccess(true);
+      
+      // Redirect after success
+      setTimeout(() => {
+        router.push("/categories");
+      }, 2000);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      setIsLoading(false);
+      // Handle error (show error message, etc.)
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this category? This action cannot be undone.")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    
+    try {
+      await categoryApi.deleteCategory(categoryId);
+      
+      setIsDeleting(false);
+      
+      // Redirect to categories list
+      router.push("/categories");
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      setIsDeleting(false);
+    }
+  };
+
+  if (isLoadingData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading category data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <FormLayout
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+      isSuccess={isSuccess}
+      successTitle="Category Updated Successfully!"
+      successMessage="Your category has been updated and saved."
+      submitButtonText="Update Category"
+      showDeleteButton={true}
+      onDelete={handleDelete}
+      isDeleting={isDeleting}
+      deleteButtonText="Delete Category"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Category Name */}
+        <div>
+          <FormField
+            label="Category Name"
+            name="name"
+            type="text"
+            placeholder="Enter category name"
+            value={formData.name}
+            onChange={(value) => handleInputChange("name", value as string)}
+            required
+            error={errors.name}
+          />
+        </div>
+
+        {/* Order */}
+        <div>
+          <FormField
+            label="Display Order"
+            name="order"
+            type="number"
+            placeholder="Enter display order"
+            value={formData.order}
+            onChange={(value) => handleInputChange("order", parseInt(value.toString()) || 1)}
+            required
+            error={errors.order}
+            min={1}
+          />
+          <p className="text-gray-500 text-sm mt-1">
+            Lower numbers appear first in the category list
+          </p>
+        </div>
+      </div>
+
+      {/* Description */}
+      <FormField
+        label="Description"
+        name="description"
+        type="textarea"
+        placeholder="Enter category description..."
+        value={formData.description}
+        onChange={(value) => handleInputChange("description", value as string)}
+        rows={4}
+        required
+        error={errors.description}
+      />
+
+
+      {/* Preview */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Preview
+        </label>
+        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-brand-50 dark:bg-brand-500/20">
+              <FolderIcon className="w-5 h-5 text-brand-500 dark:text-brand-400" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-800 dark:text-white/90">
+                {formData.name || "Category Name"}
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {formData.description || "Category description will appear here"}
+              </p>
+            </div>
+            <div className="ml-auto">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Order: {formData.order}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Toggle */}
+      <FormCheckbox
+        id="is_active"
+        label="Category is active (visible to users)"
+        checked={formData.is_active}
+        onChange={(checked) => handleInputChange("is_active", checked)}
+      />
+    </FormLayout>
+  );
+}
