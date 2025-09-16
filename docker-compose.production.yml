@@ -1,92 +1,7 @@
-# version: '3.8'
-
-# services:
-#   # MongoDB Atlas (External) - No local MongoDB needed
-
-#   # Redis not needed - removed for simplicity
-
-#   # FastAPI Backend
-#   backend:
-#     build: 
-#       context: ./backend
-#       dockerfile: Dockerfile
-#     container_name: royalprompts_backend
-#     restart: unless-stopped
-#     environment:
-#       MONGODB_URL: ${MONGODB_URL}
-#       SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-this-in-production}
-#       ENVIRONMENT: production
-#       DEBUG: "false"
-#       CORS_ORIGINS: '["http://localhost", "https://yourdomain.com"]'
-#       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
-#     volumes:
-#       - uploads_data:/app/uploads
-#       - ./backend/logs:/app/logs
-#     networks:
-#       - royalprompts_network
-#     healthcheck:
-#       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-#       interval: 30s
-#       timeout: 10s
-#       retries: 3
-
-#   # Next.js Frontend
-#   frontend:
-#     build:
-#       context: ./admin
-#       dockerfile: Dockerfile
-#     container_name: royalprompts_frontend
-#     restart: unless-stopped
-#     environment:
-#       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
-#       NODE_ENV: production
-#     depends_on:
-#       backend:
-#         condition: service_healthy
-#     networks:
-#       - royalprompts_network
-#     healthcheck:
-#       test: ["CMD", "curl", "-f", "http://localhost:3000"]
-#       interval: 30s
-#       timeout: 10s
-#       retries: 3
-
-#   # Nginx Reverse Proxy
-#   nginx:
-#     image: nginx:alpine
-#     container_name: royalprompts_nginx
-#     restart: unless-stopped
-#     ports:
-#       - "80:80"
-#       - "443:443"
-#     volumes:
-#       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-#       - ./nginx/ssl:/etc/nginx/ssl:ro
-#       - uploads_data:/usr/share/nginx/html/uploads:ro
-#       - ./nginx/logs:/var/log/nginx
-#     depends_on:
-#       - backend
-#       - frontend
-#     networks:
-#       - royalprompts_network
-#     healthcheck:
-#       test: ["CMD", "curl", "-f", "http://localhost/health"]
-#       interval: 30s
-#       timeout: 10s
-#       retries: 3
-
-# volumes:
-#   uploads_data:
-#     driver: local
-
-# networks:
-#   royalprompts_network:
-#     driver: bridge
-
 version: '3.8'
 
 services:
-  # FastAPI Backend - Direct exposure
+  # FastAPI Backend - Direct exposure for production
   backend:
     build: 
       context: ./backend
@@ -100,8 +15,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-this-in-production}
       ENVIRONMENT: production
       DEBUG: "false"
-      # More permissive CORS since frontend will be on different port
-      CORS_ORIGINS: '["http://localhost:3000", "http://localhost", "https://yourdomain.com"]'
+      # Production CORS settings
+      CORS_ORIGINS: ${CORS_ORIGINS:-'["http://localhost:3000", "http://localhost"]'}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       DOCKER_ENV: "true"
     volumes:
@@ -116,7 +31,7 @@ services:
       retries: 3
       start_period: 60s
 
-  # Next.js Frontend - Direct exposure  
+  # Next.js Frontend - Direct exposure for production
   frontend:
     build:
       context: ./admin
@@ -126,7 +41,7 @@ services:
     ports:
       - "3000:3000"  # Direct port exposure
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}  # Direct to backend
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       NODE_ENV: production
     depends_on:
       backend:
