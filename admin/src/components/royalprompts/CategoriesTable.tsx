@@ -55,14 +55,13 @@ export default function CategoriesTable() {
         setError(err instanceof Error ? err.message : "Failed to load categories");
         
         // Fallback to static categories
-        const staticCategories: Category[] = [
+        const staticCategories: CategoryAdmin[] = [
           {
             id: "1",
             name: "New",
             description: "Latest prompts",
-            prompt_count: 25,
+            prompts_count: 25,
             order: 1,
-            color: "#3B82F6",
             created_at: "2024-01-15",
             is_active: true,
           },
@@ -70,9 +69,8 @@ export default function CategoriesTable() {
             id: "2",
             name: "Trending",
             description: "Popular prompts",
-            prompt_count: 18,
+            prompts_count: 18,
             order: 2,
-            color: "#EF4444",
             created_at: "2024-01-15",
             is_active: true,
           },
@@ -223,7 +221,7 @@ export default function CategoriesTable() {
                         <div className="flex items-center gap-3">
                           <div 
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: category.color || "#465fff" }}
+                            style={{ backgroundColor: "#465fff" }}
                           >
                             <FolderIcon className="w-5 h-5 text-white" />
                           </div>
@@ -232,7 +230,7 @@ export default function CategoriesTable() {
                               {category.name}
                             </span>
                             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
-                              {category.description || `Color: ${category.color || "#465fff"}`}
+                              {category.description || "Category description"}
                             </span>
                           </div>
                         </div>
@@ -319,7 +317,7 @@ export default function CategoriesTable() {
           </div>
         )}
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          Total Prompts: {categories.reduce((sum, cat) => sum + cat.prompt_count, 0)}
+          Total Prompts: {categories.reduce((sum, cat) => sum + cat.prompts_count, 0)}
         </div>
       </div>
     </ComponentCard>

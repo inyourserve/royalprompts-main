@@ -122,7 +122,7 @@ export default function AddPromptForm() {
         content: formData.content,
         category_id: formData.category_id,
         is_featured: formData.is_featured,
-        image_url: imageUrl,
+        image_url: imageUrl || undefined,
       };
       
       // Create the prompt

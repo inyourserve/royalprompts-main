@@ -72,7 +72,7 @@ export interface PromptStats {
   total_likes: number;
 }
 
-export interface ChartData {
+export interface PromptChartData {
   prompts_added: number[];
   trending_prompts: number[];
   totals: {

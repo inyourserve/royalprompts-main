@@ -81,9 +81,7 @@ export default function AddCategoryForm() {
         name: formData.name,
         description: formData.description,
         order: formData.order,
-        is_active: formData.is_active,
         icon: formData.icon,
-        color: formData.color,
       };
       
       await categoryApi.createCategory(categoryData);

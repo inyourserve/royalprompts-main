@@ -8,7 +8,7 @@ import TextArea from "../form/input/TextArea";
 import { CheckCircleIcon } from "@/icons";
 import Alert from "../ui/alert/Alert";
 import { settingsApi } from "@/services";
-import { AppSettings } from "@/types";
+// import { AppSettings } from "@/types";
 
 interface AppSettingsFormData {
   appName: string;

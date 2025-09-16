@@ -1,6 +1,7 @@
 import os
+import json
 from typing import List, Optional
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -29,6 +30,18 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = Field(default=["*"], env="ALLOWED_HOSTS")
     CORS_ORIGINS: List[str] = Field(default=["*"], env="CORS_ORIGINS")
     FRONTEND_URL: str = Field(default="http://localhost:3000", env="FRONTEND_URL")
+    
+    @field_validator('CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            try:
+                # Try to parse as JSON first
+                return json.loads(v)
+            except json.JSONDecodeError:
+                # If not JSON, split by comma
+                return [origin.strip() for origin in v.split(',')]
+        return v
     
     # File Upload Configuration
     UPLOAD_DIR: str = Field(default="uploads", env="UPLOAD_DIR")

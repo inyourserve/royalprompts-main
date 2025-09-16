@@ -6,13 +6,14 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { CheckCircleIcon } from "@/icons";
 import Alert from "../ui/alert/Alert";
-import { socialLinksApi, SocialLink } from "@/services";
+import { socialLinksApi } from "@/services";
+import { SocialLink } from "@/services/social-links-api";
 
-interface SocialLinkFormData {
-  platform: string;
-  url: string;
-  isActive: boolean;
-}
+// interface SocialLinkFormData {
+//   platform: string;
+//   url: string;
+//   isActive: boolean;
+// }
 
 export default function SocialLinksForm() {
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);

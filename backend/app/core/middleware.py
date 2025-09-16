@@ -99,6 +99,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 def setup_middleware(app):
     """Setup all middleware for the application"""
     
+    # Log CORS configuration
+    logger.info(f"CORS Origins: {settings.CORS_ORIGINS}")
+    logger.info(f"Frontend URL: {settings.FRONTEND_URL}")
+    
     # Add CORS middleware
     app.add_middleware(
         CORSMiddleware,

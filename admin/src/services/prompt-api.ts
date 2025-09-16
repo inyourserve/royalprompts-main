@@ -4,7 +4,7 @@
 
 import { BaseApiService } from './base-api';
 import { 
-  Prompt, 
+  // Prompt, 
   PromptCreate, 
   PromptUpdate, 
   PromptAdmin, 
@@ -83,7 +83,7 @@ export class PromptApiService extends BaseApiService {
   }
 
   async archivePrompt(id: string): Promise<PromptAdmin> {
-    return this.updatePrompt(id, { status: 'archived' });
+    return this.updatePrompt(id, { status: 'draft' });
   }
 }
 
