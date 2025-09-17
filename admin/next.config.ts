@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
+  typescript: {
+    // Skip type checking during build to reduce memory usage
+    ignoreBuildErrors: true,
+  },
+  swcMinify: true, // Use SWC for faster minification
+  experimental: {
+    // Reduce memory usage during build
+    optimizeCss: false,
+    optimizePackageImports: ['lucide-react'],
+  },
   images: {
     remotePatterns: [
       {

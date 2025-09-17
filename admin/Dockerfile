@@ -3,12 +3,12 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat curl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --prefer-offline --no-audit --progress=false
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -18,18 +18,17 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy package files first
 COPY package.json package-lock.json* ./
 
-# Copy source code
+# Copy configuration files (these change less frequently)
+COPY next.config.ts tsconfig.json postcss.config.js prettier.config.js eslint.config.mjs jsvectormap.d.ts ./
+
+# Copy source code (this changes more frequently)
 COPY src ./src
 COPY public ./public
-COPY next.config.ts ./
-COPY tsconfig.json ./
-COPY postcss.config.js ./
-COPY prettier.config.js ./
-COPY eslint.config.mjs ./
-COPY jsvectormap.d.ts ./
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NEXT_BUILD_WORKERS=1
 RUN npm run build
 
 # Production image, copy all the files and run next
