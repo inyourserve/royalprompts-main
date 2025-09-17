@@ -74,7 +74,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 # Mount static files
-app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+app.mount("/uploads", StaticFiles(directory=settings.upload_dir_path), name="uploads")
 
 # Include all routers directly in main.py for better clarity
 # Mobile App Routes
@@ -124,7 +124,7 @@ async def debug_files():
     """Debug endpoint to check file system"""
     import os
     
-    upload_dir = settings.UPLOAD_DIR
+    upload_dir = settings.upload_dir_path
     
     def list_files_in_dir(directory):
         try:
@@ -161,7 +161,7 @@ async def test_specific_image(filename: str):
     """Test if a specific image file exists and is accessible"""
     import os
     
-    upload_dir = settings.UPLOAD_DIR
+    upload_dir = settings.upload_dir_path
     image_path = os.path.join(upload_dir, "images", filename)
     temp_path = os.path.join(upload_dir, "temp", filename)
     
@@ -184,7 +184,7 @@ async def upload_stats():
     """Get upload directory statistics"""
     import os
     
-    upload_dir = settings.UPLOAD_DIR
+    upload_dir = settings.upload_dir_path
     
     def get_dir_stats(directory):
         try:
@@ -231,7 +231,7 @@ async def cleanup_temp_files():
     import os
     import shutil
     
-    upload_dir = settings.UPLOAD_DIR
+    upload_dir = settings.upload_dir_path
     temp_dir = f"{upload_dir}/temp"
     
     try:

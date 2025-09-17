@@ -38,6 +38,9 @@ class Settings(BaseSettings):
         env="ALLOWED_FILE_TYPES"
     )
     
+    # Docker Environment Detection
+    DOCKER_ENV: bool = Field(default=False, env="DOCKER_ENV")
+    
     # API Configuration
     ADMIN_PREFIX: str = "/admin"
     
@@ -52,6 +55,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field(default="development", env="ENVIRONMENT")
     
     model_config = {"env_file": ".env", "case_sensitive": True, "extra": "ignore"}
+    
+    @property
+    def upload_dir_path(self) -> str:
+        """Get the correct upload directory path based on environment"""
+        if self.DOCKER_ENV:
+            return "/app/uploads"
+        return self.UPLOAD_DIR
 
 
 # Global settings instance

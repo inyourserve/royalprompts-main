@@ -13,7 +13,7 @@ class FileUploadManager:
     """File upload management utility"""
     
     def __init__(self):
-        self.upload_dir = settings.UPLOAD_DIR
+        self.upload_dir = settings.upload_dir_path  # Use the correct path for Docker/local
         self.max_file_size = settings.MAX_FILE_SIZE
         self.allowed_types = settings.ALLOWED_FILE_TYPES
         
@@ -25,8 +25,21 @@ class FileUploadManager:
     
     async def validate_file(self, file: UploadFile) -> None:
         """Validate uploaded file"""
-        # Check file size
-        if file.size and file.size > self.max_file_size:
+        # CRITICAL: Reset file pointer to beginning to check size properly
+        await file.seek(0)
+        
+        # Read content to check actual size
+        content = await file.read()
+        actual_size = len(content)
+        
+        # Reset file pointer back to beginning for later use
+        await file.seek(0)
+        
+        # Validate size and type
+        if actual_size == 0:
+            raise HTTPException(status_code=400, detail="File is empty")
+        
+        if actual_size > self.max_file_size:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail=f"File size exceeds maximum allowed size of {self.max_file_size} bytes"
@@ -66,10 +79,19 @@ class FileUploadManager:
         filename = self.generate_filename(file.filename)
         image_path = os.path.join(self.upload_dir, "images", filename)
         
+        # CRITICAL: Reset file pointer to beginning before saving
+        await file.seek(0)
+        
         # Save original image
         async with aiofiles.open(image_path, 'wb') as f:
             content = await file.read()
+            if len(content) == 0:
+                raise HTTPException(status_code=400, detail="File is empty")
             await f.write(content)
+        
+        # Validate saved file
+        if not os.path.exists(image_path) or os.path.getsize(image_path) == 0:
+            raise HTTPException(status_code=500, detail="Failed to save file")
         
         # Validate that the saved file is actually a valid image
         try:
@@ -113,10 +135,19 @@ class FileUploadManager:
         filename = self.generate_filename(file.filename)
         temp_path = os.path.join(self.upload_dir, "temp", filename)
         
+        # CRITICAL: Reset file pointer to beginning before saving
+        await file.seek(0)
+        
         # Save original image to temp directory
         async with aiofiles.open(temp_path, 'wb') as f:
             content = await file.read()
+            if len(content) == 0:
+                raise HTTPException(status_code=400, detail="File is empty")
             await f.write(content)
+        
+        # Validate saved file
+        if not os.path.exists(temp_path) or os.path.getsize(temp_path) == 0:
+            raise HTTPException(status_code=500, detail="Failed to save temp file")
         
         # Validate that the saved file is actually a valid image
         try:
