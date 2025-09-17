@@ -37,16 +37,21 @@ jobs:
           
           echo "✅ Stopped existing frontend container!"
 
-    - name: 📤 Copy frontend files
+    - name: 🏗️ Build frontend Docker image locally
+      run: |
+        cd admin
+        docker build -t royalprompts-frontend:latest .
+        docker save royalprompts-frontend:latest | gzip > frontend-image.tar.gz
+
+    - name: 📤 Copy built image to server
       uses: appleboy/scp-action@v0.1.4
       with:
         host: ${{ secrets.DROPLET_HOST }}
         username: ${{ secrets.DROPLET_USERNAME }}
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
-        source: "admin/"
+        source: "admin/frontend-image.tar.gz"
         target: "/root/royalprompts-main/"
-        strip_components: 0
 
     - name: 📤 Copy docker-compose file
       uses: appleboy/scp-action@v0.1.4
@@ -77,8 +82,14 @@ jobs:
           CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}:3000", "http://${{ secrets.DROPLET_HOST }}:8000", "http://${{ secrets.DROPLET_HOST }}"]
           EOF
           
-          # Build and start frontend using frontend-only compose file
-          docker-compose -f docker-compose.frontend.yml up --build -d frontend
+          # Load pre-built frontend image
+          docker load < frontend-image.tar.gz
+          
+          # Clean up image file
+          rm frontend-image.tar.gz
+          
+          # Start frontend using docker-compose (no build needed)
+          docker-compose -f docker-compose.frontend.yml up -d frontend
           
           # Wait for frontend to be healthy
           echo "Waiting for frontend to be healthy..."
