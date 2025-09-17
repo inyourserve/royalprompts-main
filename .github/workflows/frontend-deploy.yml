@@ -41,7 +41,8 @@ jobs:
       run: |
         cd admin
         docker build -t royalprompts-frontend:latest .
-        docker save royalprompts-frontend:latest | gzip > frontend-image.tar.gz
+        docker save royalprompts-frontend:latest | gzip > ../frontend-image.tar.gz
+        ls -la ../frontend-image.tar.gz
 
     - name: 📤 Copy built image to server
       uses: appleboy/scp-action@v0.1.4
@@ -50,7 +51,7 @@ jobs:
         username: ${{ secrets.DROPLET_USERNAME }}
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
-        source: "admin/frontend-image.tar.gz"
+        source: "frontend-image.tar.gz"
         target: "/root/royalprompts-main/"
 
     - name: 📤 Copy docker-compose file
@@ -82,11 +83,17 @@ jobs:
           CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}:3000", "http://${{ secrets.DROPLET_HOST }}:8000", "http://${{ secrets.DROPLET_HOST }}"]
           EOF
           
-          # Load pre-built frontend image
-          docker load < frontend-image.tar.gz
-          
-          # Clean up image file
-          rm frontend-image.tar.gz
+          # Check if image file exists
+          if [ -f "frontend-image.tar.gz" ]; then
+            echo "✅ Image file found, loading..."
+            docker load < frontend-image.tar.gz
+            rm frontend-image.tar.gz
+            echo "✅ Image loaded successfully!"
+          else
+            echo "❌ Image file not found! Available files:"
+            ls -la
+            exit 1
+          fi
           
           # Start frontend using docker-compose (no build needed)
           docker-compose -f docker-compose.frontend.yml up -d frontend

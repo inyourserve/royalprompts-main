@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   # Next.js Frontend - Frontend only deployment
   frontend:
     image: royalprompts-frontend:latest
     container_name: royalprompts_frontend
+    pull_policy: never
     restart: unless-stopped
     ports:
       - "3000:3000"  # Direct port exposure
