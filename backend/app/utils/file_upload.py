@@ -70,12 +70,30 @@ class FileUploadManager:
             content = await file.read()
             await f.write(content)
         
+        # Validate that the saved file is actually a valid image
+        try:
+            with Image.open(image_path) as img:
+                # Verify it's a valid image by trying to load it
+                img.verify()
+        except Exception as e:
+            # If it's not a valid image, delete the file and raise an error
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid image file: {str(e)}"
+            )
+        
+        # Reopen the image to get dimensions (verify() closes the file)
+        try:
+            with Image.open(image_path) as img:
+                width, height = img.size
+        except Exception as e:
+            # If we can't get dimensions, use defaults
+            width, height = None, None
+        
         # Generate thumbnail
         thumbnail_filename = await self.generate_thumbnail(image_path, filename)
-        
-        # Get image dimensions
-        with Image.open(image_path) as img:
-            width, height = img.size
         
         return {
             "filename": filename,
