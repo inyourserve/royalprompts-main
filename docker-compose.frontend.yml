@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # Next.js Frontend - Frontend only deployment
+  frontend:
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    container_name: royalprompts_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Direct port exposure
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  default:
+    driver: bridge

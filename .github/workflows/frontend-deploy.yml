@@ -32,7 +32,7 @@ jobs:
           cd /root/royalprompts-main
           
           # Stop existing frontend container
-          docker-compose -f docker-compose.production.yml stop frontend || true
+          docker-compose -f docker-compose.frontend.yml stop frontend || true
           docker rm -f royalprompts_frontend || true
           
           echo "✅ Stopped existing frontend container!"
@@ -55,7 +55,7 @@ jobs:
         username: ${{ secrets.DROPLET_USERNAME }}
         key: ${{ secrets.DROPLET_SSH_KEY }}
         port: ${{ secrets.DROPLET_PORT || 22 }}
-        source: "docker-compose.production.yml"
+        source: "docker-compose.frontend.yml"
         target: "/root/royalprompts-main/"
 
     - name: 🚀 Start frontend
@@ -77,8 +77,8 @@ jobs:
           CORS_ORIGINS=["http://${{ secrets.DROPLET_HOST }}:3000", "http://${{ secrets.DROPLET_HOST }}:8000", "http://${{ secrets.DROPLET_HOST }}"]
           EOF
           
-          # Build and start frontend only
-          docker-compose -f docker-compose.production.yml up --build -d frontend
+          # Build and start frontend using frontend-only compose file
+          docker-compose -f docker-compose.frontend.yml up --build -d frontend
           
           # Wait for frontend to be healthy
           echo "Waiting for frontend to be healthy..."
