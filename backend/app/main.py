@@ -118,6 +118,149 @@ async def health_check():
     )
 
 
+# Debug endpoints for file system troubleshooting
+@app.get("/debug/files", tags=["Debug"])
+async def debug_files():
+    """Debug endpoint to check file system"""
+    import os
+    
+    upload_dir = settings.UPLOAD_DIR
+    
+    def list_files_in_dir(directory):
+        try:
+            if os.path.exists(directory):
+                files = os.listdir(directory)
+                return {
+                    "exists": True,
+                    "files": files,
+                    "file_count": len(files),
+                    "absolute_path": os.path.abspath(directory)
+                }
+            else:
+                return {"exists": False, "absolute_path": os.path.abspath(directory)}
+        except Exception as e:
+            return {"error": str(e), "absolute_path": os.path.abspath(directory)}
+    
+    return {
+        "upload_dir": upload_dir,
+        "upload_dir_info": list_files_in_dir(upload_dir),
+        "images_dir": list_files_in_dir(f"{upload_dir}/images"),
+        "thumbnails_dir": list_files_in_dir(f"{upload_dir}/thumbnails"),
+        "temp_dir": list_files_in_dir(f"{upload_dir}/temp"),
+        "current_working_directory": os.getcwd(),
+        "settings_info": {
+            "upload_dir": settings.UPLOAD_DIR,
+            "app_name": settings.APP_NAME,
+            "app_version": settings.APP_VERSION
+        }
+    }
+
+
+@app.get("/debug/test-image/{filename}", tags=["Debug"])
+async def test_specific_image(filename: str):
+    """Test if a specific image file exists and is accessible"""
+    import os
+    
+    upload_dir = settings.UPLOAD_DIR
+    image_path = os.path.join(upload_dir, "images", filename)
+    temp_path = os.path.join(upload_dir, "temp", filename)
+    
+    return {
+        "filename": filename,
+        "images_path": image_path,
+        "temp_path": temp_path,
+        "images_exists": os.path.exists(image_path),
+        "temp_exists": os.path.exists(temp_path),
+        "upload_dir": upload_dir,
+        "expected_images_url": f"/uploads/images/{filename}",
+        "expected_temp_url": f"/uploads/temp/{filename}",
+        "file_size_images": os.path.getsize(image_path) if os.path.exists(image_path) else None,
+        "file_size_temp": os.path.getsize(temp_path) if os.path.exists(temp_path) else None
+    }
+
+
+@app.get("/debug/upload-stats", tags=["Debug"])
+async def upload_stats():
+    """Get upload directory statistics"""
+    import os
+    
+    upload_dir = settings.UPLOAD_DIR
+    
+    def get_dir_stats(directory):
+        try:
+            if os.path.exists(directory):
+                files = os.listdir(directory)
+                total_size = 0
+                file_details = []
+                
+                for file in files:
+                    file_path = os.path.join(directory, file)
+                    if os.path.isfile(file_path):
+                        size = os.path.getsize(file_path)
+                        total_size += size
+                        file_details.append({
+                            "name": file,
+                            "size": size,
+                            "size_mb": round(size / (1024 * 1024), 2)
+                        })
+                
+                return {
+                    "exists": True,
+                    "file_count": len(files),
+                    "total_size_bytes": total_size,
+                    "total_size_mb": round(total_size / (1024 * 1024), 2),
+                    "files": file_details
+                }
+            else:
+                return {"exists": False}
+        except Exception as e:
+            return {"error": str(e)}
+    
+    return {
+        "upload_dir": upload_dir,
+        "images_stats": get_dir_stats(f"{upload_dir}/images"),
+        "thumbnails_stats": get_dir_stats(f"{upload_dir}/thumbnails"),
+        "temp_stats": get_dir_stats(f"{upload_dir}/temp"),
+        "total_upload_dir_stats": get_dir_stats(upload_dir)
+    }
+
+
+@app.post("/debug/cleanup-temp", tags=["Debug"])
+async def cleanup_temp_files():
+    """Clean up temporary files (for testing purposes)"""
+    import os
+    import shutil
+    
+    upload_dir = settings.UPLOAD_DIR
+    temp_dir = f"{upload_dir}/temp"
+    
+    try:
+        if os.path.exists(temp_dir):
+            files = os.listdir(temp_dir)
+            for file in files:
+                file_path = os.path.join(temp_dir, file)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            
+            return {
+                "success": True,
+                "message": f"Cleaned up {len(files)} temporary files",
+                "temp_dir": temp_dir
+            }
+        else:
+            return {
+                "success": True,
+                "message": "Temp directory doesn't exist",
+                "temp_dir": temp_dir
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "temp_dir": temp_dir
+        }
+
+
 # File upload is now handled in minimal.py
 
 

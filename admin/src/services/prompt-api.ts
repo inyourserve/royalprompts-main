@@ -59,6 +59,10 @@ export class PromptApiService extends BaseApiService {
     return this.uploadFile('/api/admin/prompts/upload-image', file);
   }
 
+  async uploadTempImage(file: File): Promise<ImageUploadResponse> {
+    return this.uploadFile('/api/admin/prompts/upload-temp-image', file);
+  }
+
   async searchPrompts(query: string, page = 1, limit = 20): Promise<PaginatedResponse<PromptAdmin>> {
     const searchParams = new URLSearchParams({
       search: query,

@@ -21,6 +21,7 @@ class FileUploadManager:
         os.makedirs(self.upload_dir, exist_ok=True)
         os.makedirs(f"{self.upload_dir}/images", exist_ok=True)
         os.makedirs(f"{self.upload_dir}/thumbnails", exist_ok=True)
+        os.makedirs(f"{self.upload_dir}/temp", exist_ok=True)
     
     async def validate_file(self, file: UploadFile) -> None:
         """Validate uploaded file"""
@@ -100,6 +101,50 @@ class FileUploadManager:
             "url": f"/{self.upload_dir}/images/{filename}",
             "thumbnail_url": f"/{self.upload_dir}/thumbnails/{thumbnail_filename}" if thumbnail_filename else None,
             "size": os.path.getsize(image_path),
+            "content_type": file.content_type,
+            "width": width,
+            "height": height
+        }
+    
+    async def save_temp_image(self, file: UploadFile) -> dict:
+        """Save temporary image file for preview"""
+        await self.validate_file(file)
+        
+        filename = self.generate_filename(file.filename)
+        temp_path = os.path.join(self.upload_dir, "temp", filename)
+        
+        # Save original image to temp directory
+        async with aiofiles.open(temp_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+        
+        # Validate that the saved file is actually a valid image
+        try:
+            with Image.open(temp_path) as img:
+                # Verify it's a valid image by trying to load it
+                img.verify()
+        except Exception as e:
+            # If it's not a valid image, delete the file and raise an error
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid image file: {str(e)}"
+            )
+        
+        # Reopen the image to get dimensions (verify() closes the file)
+        try:
+            with Image.open(temp_path) as img:
+                width, height = img.size
+        except Exception as e:
+            # If we can't get dimensions, use defaults
+            width, height = None, None
+        
+        return {
+            "filename": filename,
+            "url": f"/{self.upload_dir}/temp/{filename}",
+            "thumbnail_url": None,  # No thumbnail for temp images
+            "size": os.path.getsize(temp_path),
             "content_type": file.content_type,
             "width": width,
             "height": height

@@ -14,8 +14,10 @@ interface PromptFormData {
   category_id: string;
   is_featured: boolean;
   image: File | null;
-  uploadedImageUrl: string | null;
-  uploadedImageFilename: string | null;
+  tempImageUrl: string | null;
+  tempImageFilename: string | null;
+  finalImageUrl: string | null;
+  finalImageFilename: string | null;
 }
 
 export default function AddPromptForm() {
@@ -27,8 +29,10 @@ export default function AddPromptForm() {
     category_id: "",
     is_featured: false,
     image: null,
-    uploadedImageUrl: null,
-    uploadedImageFilename: null,
+    tempImageUrl: null,
+    tempImageFilename: null,
+    finalImageUrl: null,
+    finalImageFilename: null,
   });
 
   const [categories, setCategories] = useState<CategoryAdmin[]>([]);
@@ -77,8 +81,10 @@ export default function AddPromptForm() {
       setFormData(prev => ({
         ...prev,
         image: null,
-        uploadedImageUrl: null,
-        uploadedImageFilename: null,
+        tempImageUrl: null,
+        tempImageFilename: null,
+        finalImageUrl: null,
+        finalImageFilename: null,
       }));
       return;
     }
@@ -88,7 +94,7 @@ export default function AddPromptForm() {
       image: file,
     }));
 
-    // Upload image immediately when file is selected
+    // Upload temp image for preview when file is selected
     setIsUploadingImage(true);
     setUploadProgress(0);
     
@@ -98,16 +104,16 @@ export default function AddPromptForm() {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
-      const uploadResponse = await promptApi.uploadImage(file);
+      const uploadResponse = await promptApi.uploadTempImage(file);
       
       clearInterval(progressInterval);
       setUploadProgress(100);
       
-      // Store the server response
+      // Store the temp upload response
       setFormData(prev => ({
         ...prev,
-        uploadedImageUrl: uploadResponse.url,
-        uploadedImageFilename: uploadResponse.filename,
+        tempImageUrl: uploadResponse.url,
+        tempImageFilename: uploadResponse.filename,
       }));
       
       // Clear any previous errors
@@ -119,7 +125,7 @@ export default function AddPromptForm() {
       }
       
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading temp image:", error);
       setErrors(prev => ({
         ...prev,
         image: "Failed to upload image. Please try again."
@@ -129,8 +135,8 @@ export default function AddPromptForm() {
       setFormData(prev => ({
         ...prev,
         image: null,
-        uploadedImageUrl: null,
-        uploadedImageFilename: null,
+        tempImageUrl: null,
+        tempImageFilename: null,
       }));
     } finally {
       setIsUploadingImage(false);
@@ -159,7 +165,7 @@ export default function AddPromptForm() {
     }
 
     // Check if image is selected but not uploaded yet
-    if (formData.image && !formData.uploadedImageUrl) {
+    if (formData.image && !formData.tempImageUrl) {
       newErrors.image = "Please wait for image upload to complete";
     }
 
@@ -177,14 +183,29 @@ export default function AddPromptForm() {
     setIsLoading(true);
     
     try {
-      // Create prompt data using the already uploaded image URL
+      let finalImageUrl = null;
+      
+      // Upload final image if temp image exists
+      if (formData.tempImageUrl && formData.image) {
+        const finalUploadResponse = await promptApi.uploadImage(formData.image);
+        finalImageUrl = finalUploadResponse.url;
+        
+        // Store final upload response
+        setFormData(prev => ({
+          ...prev,
+          finalImageUrl: finalUploadResponse.url,
+          finalImageFilename: finalUploadResponse.filename,
+        }));
+      }
+      
+      // Create prompt data using the final uploaded image URL
       const promptData: PromptCreate = {
         title: formData.title,
         description: formData.description,
         content: formData.content,
         category_id: formData.category_id,
         is_featured: formData.is_featured,
-        image_url: formData.uploadedImageUrl || undefined,
+        image_url: finalImageUrl || undefined,
       };
       
       // Create the prompt
@@ -304,7 +325,7 @@ export default function AddPromptForm() {
         selectedFile={formData.image}
         isUploading={isUploadingImage}
         uploadProgress={uploadProgress}
-        uploadedImageUrl={formData.uploadedImageUrl}
+        uploadedImageUrl={formData.tempImageUrl}
         error={errors.image}
       />
 

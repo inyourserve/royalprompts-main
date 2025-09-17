@@ -115,6 +115,33 @@ async def delete_admin_prompt(
     return {"message": "Prompt deleted successfully"}
 
 
+@router.post("/upload-temp-image", response_model=ImageUploadResponse, tags=["Admin Prompts"])
+async def upload_temp_image(
+    file: UploadFile = File(...),
+    current_admin = Depends(get_current_admin),
+    file_manager = Depends(get_file_upload_manager)
+):
+    """
+    Upload temporary image for preview (Admin only)
+    Images are stored in temp directory and cleaned up after use
+    """
+    # Validate file type
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    
+    result = await file_manager.save_temp_image(file)
+    
+    return ImageUploadResponse(
+        filename=result["filename"],
+        url=result["url"],
+        thumbnail_url=result["thumbnail_url"],
+        size=result["size"],
+        content_type=result["content_type"],
+        width=result["width"],
+        height=result["height"]
+    )
+
+
 @router.post("/upload-image", response_model=ImageUploadResponse, tags=["Admin Prompts"])
 async def upload_prompt_image(
     file: UploadFile = File(...),
@@ -122,7 +149,7 @@ async def upload_prompt_image(
     file_manager = Depends(get_file_upload_manager)
 ):
     """
-    Upload image for prompt (Admin only)
+    Upload final image for prompt (Admin only)
     Each prompt has exactly 1 image
     """
     # Validate file type
