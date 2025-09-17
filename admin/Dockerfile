@@ -27,7 +27,6 @@ COPY postcss.config.js ./
 COPY prettier.config.js ./
 COPY eslint.config.mjs ./
 COPY jsvectormap.d.ts ./
-COPY next-env.d.ts ./
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED 1
