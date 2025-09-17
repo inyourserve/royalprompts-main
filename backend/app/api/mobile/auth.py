@@ -4,16 +4,60 @@ Handles anonymous login and device sessions
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, Body
+from pydantic import BaseModel
 from app.core.device_auth import get_active_device_user, create_device_token
 from app.schemas.device import DeviceRegistration, ApiKeyResponse, RateLimitInfo
 from app.services.device_service import DeviceService
+from app.models.device import DeviceType
 
 router = APIRouter()
 
 
+class OptionalDeviceInfo(BaseModel):
+    """Optional device information for anonymous login"""
+    device_id: Optional[str] = None
+    device_type: Optional[DeviceType] = None
+    device_model: Optional[str] = None
+    os_version: Optional[str] = None
+    app_version: Optional[str] = None
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "device_id": "my-device-123",
+                    "device_type": "android",
+                    "device_model": "Pixel 7",
+                    "os_version": "13",
+                    "app_version": "1.0.0"
+                },
+                {
+                    "device_id": "ios-device-456",
+                    "device_type": "ios",
+                    "device_model": "iPhone 14",
+                    "os_version": "16.0",
+                    "app_version": "1.2.0"
+                },
+                {}
+            ]
+        }
+    }
+
+
 @router.post("/anonymous-login", response_model=ApiKeyResponse, tags=["Mobile Auth"])
 async def anonymous_login(
-    request: Request
+    request: Request,
+    device_info: OptionalDeviceInfo = Body(
+        default=OptionalDeviceInfo(),
+        description="Optional device information for anonymous login",
+        example={
+            "device_id": "my-device-123",
+            "device_type": "android",
+            "device_model": "Pixel 7",
+            "os_version": "13",
+            "app_version": "1.0.0"
+        }
+    )
 ):
     """
     Anonymous login - No registration required!
@@ -21,34 +65,29 @@ async def anonymous_login(
     """
     device_service = DeviceService()
     
-    # Try to get device info from request body, but don't require it
-    try:
-        body = await request.json()
-        device_info = body if body else {}
-    except:
-        device_info = {}
-    
     # Generate anonymous device ID if not provided
-    if not device_info.get("device_id"):
+    if not device_info.device_id:
         import uuid
         device_id = f"anon_{str(uuid.uuid4())[:8]}"
-        device_info["device_id"] = device_id
+        device_info.device_id = device_id
     
     # Set default values for required fields
-    from app.models.device import DeviceType
-    if not device_info.get("device_type"):
-        device_info["device_type"] = DeviceType.ANDROID
-    if not device_info.get("device_model"):
-        device_info["device_model"] = "anonymous"
-    if not device_info.get("os_version"):
-        device_info["os_version"] = "unknown"
-    if not device_info.get("app_version"):
-        device_info["app_version"] = "1.0.0"
+    if not device_info.device_type:
+        device_info.device_type = DeviceType.ANDROID
+    if not device_info.device_model:
+        device_info.device_model = "anonymous"
+    if not device_info.os_version:
+        device_info.os_version = "unknown"
+    if not device_info.app_version:
+        device_info.app_version = "1.0.0"
+    
+    # Convert to dict for service call
+    device_info_dict = device_info.model_dump()
     
     # Create anonymous device user
     device_user = await device_service.get_or_create_device_user(
-        device_info["device_id"],
-        device_info,
+        device_info.device_id,
+        device_info_dict,
         request
     )
     
