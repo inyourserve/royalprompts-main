@@ -58,6 +58,11 @@ class FileUploadManager:
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         return unique_filename
     
+    def generate_image_directory(self, filename: str) -> str:
+        """Generate directory name for image (without extension)"""
+        name_without_ext = os.path.splitext(filename)[0]
+        return name_without_ext
+    
     async def save_file(self, file: UploadFile, subfolder: str = "images") -> str:
         """Save uploaded file to disk"""
         await self.validate_file(file)
@@ -77,7 +82,13 @@ class FileUploadManager:
         await self.validate_file(file)
         
         filename = self.generate_filename(file.filename)
-        image_path = os.path.join(self.upload_dir, "images", filename)
+        image_dir = self.generate_image_directory(filename)
+        
+        # Create directory for this image
+        image_dir_path = os.path.join(self.upload_dir, "images", image_dir)
+        os.makedirs(image_dir_path, exist_ok=True)
+        
+        image_path = os.path.join(image_dir_path, filename)
         
         # CRITICAL: Reset file pointer to beginning before saving
         await file.seek(0)
@@ -116,12 +127,12 @@ class FileUploadManager:
             width, height = None, None
         
         # Generate thumbnail
-        thumbnail_filename = await self.generate_thumbnail(image_path, filename)
+        thumbnail_filename = await self.generate_thumbnail(image_path, filename, image_dir)
         
         return {
             "filename": filename,
-            "url": f"/{self.upload_dir}/images/{filename}",
-            "thumbnail_url": f"/{self.upload_dir}/thumbnails/{thumbnail_filename}" if thumbnail_filename else None,
+            "url": f"/{self.upload_dir}/images/{image_dir}/{filename}",
+            "thumbnail_url": f"/{self.upload_dir}/thumbnails/{image_dir}/{thumbnail_filename}" if thumbnail_filename else None,
             "size": os.path.getsize(image_path),
             "content_type": file.content_type,
             "width": width,
@@ -133,7 +144,13 @@ class FileUploadManager:
         await self.validate_file(file)
         
         filename = self.generate_filename(file.filename)
-        temp_path = os.path.join(self.upload_dir, "temp", filename)
+        temp_dir = self.generate_image_directory(filename)
+        
+        # Create directory for this temp image
+        temp_dir_path = os.path.join(self.upload_dir, "temp", temp_dir)
+        os.makedirs(temp_dir_path, exist_ok=True)
+        
+        temp_path = os.path.join(temp_dir_path, filename)
         
         # CRITICAL: Reset file pointer to beginning before saving
         await file.seek(0)
@@ -173,7 +190,7 @@ class FileUploadManager:
         
         return {
             "filename": filename,
-            "url": f"/{self.upload_dir}/temp/{filename}",
+            "url": f"/{self.upload_dir}/temp/{temp_dir}/{filename}",
             "thumbnail_url": None,  # No thumbnail for temp images
             "size": os.path.getsize(temp_path),
             "content_type": file.content_type,
@@ -181,11 +198,16 @@ class FileUploadManager:
             "height": height
         }
     
-    async def generate_thumbnail(self, image_path: str, filename: str, size: tuple = (300, 300)) -> Optional[str]:
+    async def generate_thumbnail(self, image_path: str, filename: str, image_dir: str, size: tuple = (300, 300)) -> Optional[str]:
         """Generate thumbnail for image"""
         try:
             thumbnail_filename = f"thumb_{filename}"
-            thumbnail_path = os.path.join(self.upload_dir, "thumbnails", thumbnail_filename)
+            
+            # Create thumbnail directory
+            thumbnail_dir_path = os.path.join(self.upload_dir, "thumbnails", image_dir)
+            os.makedirs(thumbnail_dir_path, exist_ok=True)
+            
+            thumbnail_path = os.path.join(thumbnail_dir_path, thumbnail_filename)
             
             with Image.open(image_path) as img:
                 # Convert to RGB if necessary
@@ -204,9 +226,15 @@ class FileUploadManager:
     def delete_file(self, filename: str, subfolder: str = "images") -> bool:
         """Delete file from disk"""
         try:
-            file_path = os.path.join(self.upload_dir, subfolder, filename)
+            # For new directory structure, we need the image directory
+            image_dir = self.generate_image_directory(filename)
+            file_path = os.path.join(self.upload_dir, subfolder, image_dir, filename)
             if os.path.exists(file_path):
                 os.remove(file_path)
+                # Also remove the directory if it's empty
+                dir_path = os.path.join(self.upload_dir, subfolder, image_dir)
+                if os.path.exists(dir_path) and not os.listdir(dir_path):
+                    os.rmdir(dir_path)
                 return True
             return False
         except Exception as e:
@@ -221,7 +249,8 @@ class FileUploadManager:
     
     def get_file_url(self, filename: str, subfolder: str = "images") -> str:
         """Get public URL for file"""
-        return f"/{self.upload_dir}/{subfolder}/{filename}"
+        image_dir = self.generate_image_directory(filename)
+        return f"/{self.upload_dir}/{subfolder}/{image_dir}/{filename}"
 
 
 # Global file upload manager instance
