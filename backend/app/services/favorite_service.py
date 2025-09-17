@@ -65,9 +65,13 @@ class FavoriteService(BaseService[Favorite, FavoriteCreate, dict]):
         for favorite in favorites:
             prompt = await prompt_service.get_by_id(favorite.prompt_id)
             if prompt:
+                # Convert prompt to dict and ensure id is string
+                prompt_dict = prompt.model_dump()
+                prompt_dict["id"] = str(prompt.id)
+                
                 favorites_with_prompts.append(FavoriteWithPrompt(
                     id=str(favorite.id),
-                    prompt=prompt,
+                    prompt=prompt_dict,
                     created_at=favorite.created_at
                 ))
         

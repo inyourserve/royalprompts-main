@@ -35,7 +35,7 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
             "category_id": category_id,
             "status": PromptStatus.PUBLISHED,
             "is_active": True
-        })
+        }, limit=limit)
     
     # Removed get_by_type method since PromptType enum was removed
     
@@ -83,7 +83,7 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
             "is_active": True
         }
         
-        return await self.repository.find_many(search_filter)
+        return await self.repository.find_many(search_filter, limit=limit)
     
     async def get_by_filter(
         self, 

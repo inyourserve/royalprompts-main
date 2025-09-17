@@ -5,7 +5,7 @@ Handles favorites management for mobile app
 from typing import List
 from fastapi import APIRouter, Depends
 
-from app.core.device_auth import get_active_device_user
+from app.core.device_auth import get_authenticated_device_user
 from app.schemas.prompt import PromptSummary
 from app.services.favorite_service import FavoriteService
 
@@ -13,7 +13,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=List[PromptSummary], tags=["Mobile Favorites"])
-async def get_favorites(device_user = Depends(get_active_device_user)):
+async def get_favorites(device_user = Depends(get_authenticated_device_user)):
     """Get device's favorite prompts"""
     favorite_service = FavoriteService()
     favorites = await favorite_service.get_device_favorites_with_prompts(device_user.device_id)
@@ -31,7 +31,7 @@ async def get_favorites(device_user = Depends(get_active_device_user)):
 @router.post("/{prompt_id}", tags=["Mobile Favorites"])
 async def toggle_favorite(
     prompt_id: str,
-    device_user = Depends(get_active_device_user)
+    device_user = Depends(get_authenticated_device_user)
 ):
     """Toggle favorite status (heart icon in mobile UI)"""
     favorite_service = FavoriteService()

@@ -118,9 +118,12 @@ class MongoRepository(BaseRepository[T]):
         """Find one document by filters"""
         return await self.model.find_one(filters)
     
-    async def find_many(self, filters: Dict[str, Any]) -> List[T]:
+    async def find_many(self, filters: Dict[str, Any], limit: Optional[int] = None) -> List[T]:
         """Find many documents by filters"""
-        return await self.model.find(filters).to_list()
+        query = self.model.find(filters)
+        if limit:
+            query = query.limit(limit)
+        return await query.to_list()
 
 
 class CacheableRepository(MongoRepository[T]):

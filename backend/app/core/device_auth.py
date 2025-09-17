@@ -44,7 +44,7 @@ async def get_device_user(
     
     # Get device info from headers (optional for anonymous users)
     device_info = {
-        "device_type": request.headers.get("x-device-type", "mobile"),
+        "device_type": request.headers.get("x-device-type", "android"),  # Default to android instead of mobile
         "device_model": request.headers.get("x-device-model", "anonymous"),
         "os_version": request.headers.get("x-os-version", "unknown"),
         "app_version": request.headers.get("x-app-version", "1.0.0"),
@@ -74,6 +74,54 @@ async def get_active_device_user(
     await device_service.check_rate_limit(device_user)
     
     return device_user
+
+
+async def get_authenticated_device_user(
+    credentials: HTTPAuthorizationCredentials = Depends(device_security)
+) -> DeviceUser:
+    """Get authenticated device user - requires valid token"""
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required. Please provide a valid token."
+        )
+    
+    try:
+        user_id = security_manager.verify_token(credentials.credentials)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+        
+        device_service = DeviceService()
+        device_user = await device_service.get_by_id(user_id)
+        if not device_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Device user not found"
+            )
+        
+        if device_user.is_blocked or not device_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Device access has been blocked"
+            )
+        
+        # Update activity and check rate limits
+        device_user.update_activity()
+        await device_user.save()
+        await device_service.check_rate_limit(device_user)
+        
+        return device_user
+        
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
 
 
 async def get_premium_device_user(

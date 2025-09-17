@@ -5,7 +5,7 @@ Handles prompt browsing, details, unlocking for mobile app
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.core.device_auth import get_active_device_user
+from app.core.device_auth import get_authenticated_device_user
 from app.schemas.prompt import PromptSummary, PromptDetail
 from app.schemas.common import PaginationParams, PaginatedResponse
 from app.services.prompt_service import PromptService
@@ -17,37 +17,29 @@ router = APIRouter()
 # Guest browsing removed - anonymous login provides same functionality
 @router.get("", response_model=PaginatedResponse[PromptSummary], tags=["Mobile Prompts"])
 async def browse_prompts(
-    category: Optional[str] = Query(None, description="new|trending|cinematic|portra"),
-    search: Optional[str] = Query(None),
+    category_id: Optional[str] = Query(None, description="Category ID to filter prompts"),
+    search: Optional[str] = Query(None, description="Search term to filter prompts"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, le=50),
-    device_user = Depends(get_active_device_user)
+    device_user = Depends(get_authenticated_device_user)
 ):
     """
     Browse prompts - handles all mobile app tabs
-    Maps to: New, Trending, Cinematic, Portra tabs in mobile UI
+    Supports filtering by category_id and search terms
     """
     prompt_service = PromptService()
     pagination = PaginationParams(skip=(page-1)*limit, limit=limit)
     
-    if category == "new":
-        prompts = await prompt_service.get_recent(limit=limit)
+    if category_id:
+        # Filter prompts by category ID
+        prompts = await prompt_service.get_by_category(category_id, limit=limit)
         total = len(prompts)
-    elif category == "trending":
-        prompts = await prompt_service.get_trending(limit=limit)
+    elif search:
+        # Search prompts by search term
+        prompts = await prompt_service.search(search, limit=limit)
         total = len(prompts)
-    elif category in ["cinematic", "portra"]:
-        # Get category by name first, then get prompts by category
-        from app.services.category_service import CategoryService
-        category_service = CategoryService()
-        category_obj = await category_service.get_by_name(category)
-        if category_obj:
-            prompts = await prompt_service.get_by_category(str(category_obj.id), limit=limit)
-            total = len(prompts)
-        else:
-            prompts = []
-            total = 0
     else:
+        # Get all published prompts
         result = await prompt_service.get_multi(pagination, {"status": "published"})
         prompts = result.items
         total = result.total
@@ -66,7 +58,7 @@ async def browse_prompts(
 @router.get("/{prompt_id}", response_model=PromptDetail, tags=["Mobile Prompts"])
 async def get_prompt_detail(
     prompt_id: str,
-    device_user = Depends(get_active_device_user)
+    device_user = Depends(get_authenticated_device_user)
 ):
     """Get prompt detail for mobile app prompt screen"""
     prompt_service = PromptService()
@@ -93,7 +85,7 @@ async def get_prompt_detail(
 @router.post("/{prompt_id}/unlock", tags=["Mobile Prompts"])
 async def unlock_prompt(
     prompt_id: str,
-    device_user = Depends(get_active_device_user)
+    device_user = Depends(get_authenticated_device_user)
 ):
     """Unlock premium prompt (matches 'Unlock to View Prompt' button)"""
     prompt_service = PromptService()
