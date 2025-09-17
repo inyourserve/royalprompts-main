@@ -14,6 +14,8 @@ interface PromptFormData {
   category_id: string;
   is_featured: boolean;
   image: File | null;
+  uploadedImageUrl: string | null;
+  uploadedImageFilename: string | null;
 }
 
 export default function AddPromptForm() {
@@ -25,6 +27,8 @@ export default function AddPromptForm() {
     category_id: "",
     is_featured: false,
     image: null,
+    uploadedImageUrl: null,
+    uploadedImageFilename: null,
   });
 
   const [categories, setCategories] = useState<CategoryAdmin[]>([]);
@@ -32,6 +36,8 @@ export default function AddPromptForm() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   // Load categories
   useEffect(() => {
@@ -66,11 +72,70 @@ export default function AddPromptForm() {
   };
 
 
-  const handleFileSelect = (file: File | null) => {
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) {
+      setFormData(prev => ({
+        ...prev,
+        image: null,
+        uploadedImageUrl: null,
+        uploadedImageFilename: null,
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
-      image: file
+      image: file,
     }));
+
+    // Upload image immediately when file is selected
+    setIsUploadingImage(true);
+    setUploadProgress(0);
+    
+    try {
+      // Simulate progress (since we can't get real progress from fetch)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 100);
+
+      const uploadResponse = await promptApi.uploadImage(file);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      
+      // Store the server response
+      setFormData(prev => ({
+        ...prev,
+        uploadedImageUrl: uploadResponse.url,
+        uploadedImageFilename: uploadResponse.filename,
+      }));
+      
+      // Clear any previous errors
+      if (errors.image) {
+        setErrors(prev => ({
+          ...prev,
+          image: ""
+        }));
+      }
+      
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setErrors(prev => ({
+        ...prev,
+        image: "Failed to upload image. Please try again."
+      }));
+      
+      // Reset form data on upload failure
+      setFormData(prev => ({
+        ...prev,
+        image: null,
+        uploadedImageUrl: null,
+        uploadedImageFilename: null,
+      }));
+    } finally {
+      setIsUploadingImage(false);
+      setUploadProgress(0);
+    }
   };
 
 
@@ -93,6 +158,11 @@ export default function AddPromptForm() {
       newErrors.content = "Prompt content is required";
     }
 
+    // Check if image is selected but not uploaded yet
+    if (formData.image && !formData.uploadedImageUrl) {
+      newErrors.image = "Please wait for image upload to complete";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -107,22 +177,14 @@ export default function AddPromptForm() {
     setIsLoading(true);
     
     try {
-      let imageUrl = null;
-      
-      // Upload image first if provided
-      if (formData.image) {
-        const uploadResponse = await promptApi.uploadImage(formData.image);
-        imageUrl = uploadResponse.url;
-      }
-      
-      // Create prompt data
+      // Create prompt data using the already uploaded image URL
       const promptData: PromptCreate = {
         title: formData.title,
         description: formData.description,
         content: formData.content,
         category_id: formData.category_id,
         is_featured: formData.is_featured,
-        image_url: imageUrl || undefined,
+        image_url: formData.uploadedImageUrl || undefined,
       };
       
       // Create the prompt
@@ -158,11 +220,11 @@ export default function AddPromptForm() {
   return (
     <FormLayout
       onSubmit={handleSubmit}
-      isLoading={isLoading}
+      isLoading={isLoading || isUploadingImage}
       isSuccess={isSuccess}
       successTitle="Prompt Created Successfully!"
       successMessage="Your new prompt has been added to the collection."
-      submitButtonText="Create Prompt"
+      submitButtonText={isUploadingImage ? "Uploading Image..." : "Create Prompt"}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Title */}
@@ -240,6 +302,10 @@ export default function AddPromptForm() {
         maxSize={5}
         onFileSelect={handleFileSelect}
         selectedFile={formData.image}
+        isUploading={isUploadingImage}
+        uploadProgress={uploadProgress}
+        uploadedImageUrl={formData.uploadedImageUrl}
+        error={errors.image}
       />
 
     </FormLayout>

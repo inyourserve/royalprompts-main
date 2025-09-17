@@ -15,6 +15,9 @@ interface FileUploadProps {
   error?: string;
   className?: string;
   preview?: boolean;
+  isUploading?: boolean;
+  uploadProgress?: number;
+  uploadedImageUrl?: string | null;
 }
 
 export default function FileUpload({
@@ -28,6 +31,9 @@ export default function FileUpload({
   error,
   className = "",
   preview = true,
+  isUploading = false,
+  uploadProgress = 0,
+  uploadedImageUrl = null,
 }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -131,7 +137,33 @@ export default function FileUpload({
 
         {selectedFile ? (
           <div className="text-center">
-            {preview && previewUrl ? (
+            {isUploading ? (
+              <div className="mb-4">
+                <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+                  Uploading... {uploadProgress}%
+                </p>
+                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            ) : uploadedImageUrl ? (
+              <div className="mb-4">
+                <img
+                  src={uploadedImageUrl}
+                  alt="Uploaded Preview"
+                  className="max-h-48 mx-auto rounded-lg shadow-sm"
+                />
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  ✅ Image uploaded successfully
+                </p>
+              </div>
+            ) : preview && previewUrl ? (
               <div className="mb-4">
                 <img
                   src={previewUrl}
@@ -152,15 +184,17 @@ export default function FileUpload({
               {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
             </p>
             
-            <Button
-              type="button"
-              variant="outline"
-              onClick={removeFile}
-              className="flex items-center gap-2"
-            >
-              <CloseIcon className="w-4 h-4" />
-              Remove File
-            </Button>
+            {!isUploading && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={removeFile}
+                className="flex items-center gap-2"
+              >
+                <CloseIcon className="w-4 h-4" />
+                Remove File
+              </Button>
+            )}
           </div>
         ) : (
           <div className="text-center">
