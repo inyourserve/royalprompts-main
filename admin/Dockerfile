@@ -8,13 +8,26 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Copy package files first
+COPY package.json package-lock.json* ./
+
+# Copy source code
+COPY src ./src
+COPY public ./public
+COPY next.config.ts ./
+COPY tsconfig.json ./
+COPY postcss.config.js ./
+COPY prettier.config.js ./
+COPY eslint.config.mjs ./
+COPY jsvectormap.d.ts ./
+COPY next-env.d.ts ./
 
 # Build the application
 ENV NEXT_TELEMETRY_DISABLED 1
