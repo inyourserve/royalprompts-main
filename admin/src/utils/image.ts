@@ -1,5 +1,28 @@
 import { FALLBACK_IMAGE, IMAGE_URLS } from '../config/images';
 
+// API base URL for constructing full image URLs
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+// Convert relative image URL to full URL
+export const getFullImageUrl = (imageUrl: string | undefined | null): string => {
+  if (!imageUrl || imageUrl.trim() === '') {
+    return FALLBACK_IMAGE;
+  }
+
+  // If it's already a full URL (starts with http), return as is
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+
+  // If it's a relative path, prepend the API base URL
+  if (imageUrl.startsWith('/')) {
+    return `${API_BASE_URL}${imageUrl}`;
+  }
+
+  // If it's a relative path without leading slash, add it
+  return `${API_BASE_URL}/${imageUrl}`;
+};
+
 // Check if image URL returns 404 and return fallback if needed
 export const getImageUrl = async (url: string): Promise<string> => {
   if (!url || url.trim() === '') {

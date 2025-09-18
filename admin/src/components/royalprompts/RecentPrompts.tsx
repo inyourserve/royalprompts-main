@@ -10,8 +10,9 @@ import {
 import Badge from "../ui/badge/Badge";
 import Image from "next/image";
 import ComponentCard from "../common/ComponentCard";
-import { getImageDimensions } from "@/utils/image";
+import { getImageDimensions, getFullImageUrl } from "@/utils/image";
 import { dashboardApi, categoryApi } from "@/services";
+import ImagePreviewModal from "../common/ImagePreviewModal";
 
 interface Prompt {
   id: string;
@@ -38,6 +39,11 @@ export default function RecentPrompts() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [previewModal, setPreviewModal] = useState<{
+    isOpen: boolean;
+    imageUrl?: string;
+    title?: string;
+  }>({ isOpen: false });
 
   const getCategoryName = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);
@@ -170,10 +176,17 @@ export default function RecentPrompts() {
                   <TableRow key={prompt.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <TableCell className="px-5 py-4 sm:px-6 text-start">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 overflow-hidden rounded-lg">
+                        <div 
+                          className="w-12 h-12 overflow-hidden rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewModal({
+                            isOpen: true,
+                            imageUrl: prompt.image_url || prompt.image,
+                            title: prompt.title
+                          })}
+                        >
                           <Image
                             {...getImageDimensions('prompt')}
-                            src={prompt.image_url || prompt.image || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop"}
+                            src={getFullImageUrl(prompt.image_url || prompt.image)}
                             alt={prompt.title}
                             className="w-full h-full object-cover"
                           />
@@ -228,5 +241,14 @@ export default function RecentPrompts() {
         </div>
       </div>
     </ComponentCard>
+
+    {/* Image Preview Modal */}
+    <ImagePreviewModal
+      isOpen={previewModal.isOpen}
+      onClose={() => setPreviewModal({ isOpen: false })}
+      imageUrl={previewModal.imageUrl}
+      title={previewModal.title}
+      alt="Prompt Image"
+    />
   );
 }

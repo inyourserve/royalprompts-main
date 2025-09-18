@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import Label from "./Label";
 import Button from "../ui/button/Button";
 import { PlusIcon, CloseIcon } from "@/icons";
+import { getFullImageUrl } from "@/utils/image";
 
 interface FileUploadWithPreviewProps {
   label: string;
@@ -100,7 +101,7 @@ export default function FileUploadWithPreview({
   };
 
   // Determine what image to show
-  const displayImage = previewUrl || currentImageUrl;
+  const displayImage = previewUrl || getFullImageUrl(currentImageUrl);
   const hasImage = selectedFile || currentImageUrl;
 
   return (

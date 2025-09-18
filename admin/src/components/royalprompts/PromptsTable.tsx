@@ -15,8 +15,9 @@ import { PencilIcon, TrashBinIcon, PlusIcon, SearchIcon } from "@/icons";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import ComponentCard from "../common/ComponentCard";
-import { getImageDimensions } from "@/utils/image";
+import { getImageDimensions, getFullImageUrl } from "@/utils/image";
 import { promptApi, categoryApi, PromptAdmin, CategoryAdmin } from "@/services";
+import ImagePreviewModal from "../common/ImagePreviewModal";
 
 export default function PromptsTable() {
   const router = useRouter();
@@ -29,6 +30,11 @@ export default function PromptsTable() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPrompts, setTotalPrompts] = useState(0);
+  const [previewModal, setPreviewModal] = useState<{
+    isOpen: boolean;
+    imageUrl?: string;
+    title?: string;
+  }>({ isOpen: false });
   const pageSize = 10;
 
   // Helper function to get category name from category ID
@@ -148,10 +154,11 @@ export default function PromptsTable() {
   const allCategories = [{ id: "all", name: "All" }, ...categories];
 
   return (
-    <ComponentCard
-      title="All Prompts"
-      desc="Manage and organize your prompts"
-    >
+    <div>
+      <ComponentCard
+        title="All Prompts"
+        desc="Manage and organize your prompts"
+      >
       {/* Search and Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
         
@@ -272,10 +279,17 @@ export default function PromptsTable() {
                   <TableRow key={prompt.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <TableCell className="px-4 py-3 text-start w-1/2 min-w-[300px]">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 overflow-hidden rounded-lg flex-shrink-0">
+                        <div 
+                          className="w-10 h-10 overflow-hidden rounded-lg flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewModal({
+                            isOpen: true,
+                            imageUrl: prompt.image_url,
+                            title: prompt.title
+                          })}
+                        >
                           <Image
                             {...getImageDimensions('prompt')}
-                            src={prompt.image_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop"}
+                            src={getFullImageUrl(prompt.image_url)}
                             alt={prompt.title}
                             className="w-full h-full object-cover"
                           />
@@ -370,5 +384,15 @@ export default function PromptsTable() {
         </div>
       )}
     </ComponentCard>
+
+    {/* Image Preview Modal */}
+    <ImagePreviewModal
+      isOpen={previewModal.isOpen}
+      onClose={() => setPreviewModal({ isOpen: false })}
+      imageUrl={previewModal.imageUrl}
+      title={previewModal.title}
+      alt="Prompt Image"
+    />
+  </div>
   );
 }
