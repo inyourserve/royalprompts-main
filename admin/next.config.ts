@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     // Skip type checking during build to reduce memory usage
     ignoreBuildErrors: true,
   },
-  swcMinify: true, // Use SWC for faster minification
+  // swcMinify is deprecated in Next.js 15+
   experimental: {
     // Reduce memory usage during build
     optimizeCss: false,

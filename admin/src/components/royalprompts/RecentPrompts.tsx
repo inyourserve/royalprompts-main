@@ -135,10 +135,11 @@ export default function RecentPrompts() {
   }
 
   return (
-    <ComponentCard
-      title="Recently Added Prompts"
-      desc="Latest prompts added to the platform"
-    >
+    <div>
+      <ComponentCard
+        title="Recently Added Prompts"
+        desc="Latest prompts added to the platform"
+      >
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="max-w-full overflow-x-auto">
           <div className="min-w-[800px]">
@@ -250,5 +251,6 @@ export default function RecentPrompts() {
       title={previewModal.title}
       alt="Prompt Image"
     />
+  </div>
   );
 }
