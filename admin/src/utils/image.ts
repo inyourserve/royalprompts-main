@@ -1,7 +1,7 @@
 import { FALLBACK_IMAGE, IMAGE_URLS } from '../config/images';
 
 // API base URL for constructing full image URLs
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://134.209.147.231:8000';
 
 // Convert relative image URL to full URL
 export const getFullImageUrl = (imageUrl: string | undefined | null): string => {
