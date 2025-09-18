@@ -2,7 +2,7 @@
  * Base API service with common functionality
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://134.209.147.231:8000';
 
 export class BaseApiService {
   protected getAuthToken(): string | null {
