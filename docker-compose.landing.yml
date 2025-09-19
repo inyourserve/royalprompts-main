@@ -6,9 +6,15 @@ services:
     restart: unless-stopped
     ports:
       - "4321:80"  # Port 4321 (Astro default, 8000=backend, 3000=admin)
+    networks:
+      - landing_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+
+networks:
+  landing_network:
+    driver: bridge
