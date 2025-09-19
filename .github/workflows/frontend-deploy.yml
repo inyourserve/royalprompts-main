@@ -6,7 +6,7 @@ on:
     paths:
       - 'admin/**'
       - '.github/workflows/frontend-deploy.yml'
-      - 'docker-compose.production.yml'
+      - 'docker-compose.frontend.yml'
   workflow_dispatch:
 
 jobs:

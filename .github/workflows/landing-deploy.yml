@@ -1,120 +1,138 @@
-name: 🚀 Deploy Landing Page
+name: 🚀 Landing Page Deploy
 
 on:
   push:
     branches: [ main ]
     paths:
       - 'landing/**'
+      - '.github/workflows/landing-deploy.yml'
+      - 'docker-compose.landing.yml'
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: royalprompts/landing
-
 jobs:
-  # Build and deploy
+  # Deploy Landing Page to DigitalOcean
   deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 📦 Setup Node.js
-      uses: actions/setup-node@v4
+    - name: 🚀 Deploy Landing Page to DigitalOcean
+      uses: appleboy/ssh-action@v1.0.0
       with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: landing/package-lock.json
-
-    - name: 📦 Install dependencies
-      working-directory: ./landing
-      run: npm ci
-
-    - name: 🔨 Build application
-      working-directory: ./landing
-      run: npm run build
-
-    - name: 🐳 Build Docker image
-      run: |
-        cd landing
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-        docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest .
-
-    - name: 🔐 Login to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: 📤 Push Docker image
-      run: |
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-
-    - name: 🔐 Setup SSH
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
-
-    - name: 🚀 Deploy to server
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.DROPLET_USERNAME }}@${{ secrets.DROPLET_HOST }} << 'EOF'
-          set -e
-          
-          print_status() { echo -e "\033[0;34m[INFO]\033[0m $1"; }
-          print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
-          print_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
-          
-          print_status "🚀 Starting landing page deployment..."
-          
-          # Navigate to project directory
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Create project directory
+          mkdir -p /root/royalprompts-main
           cd /root/royalprompts-main
           
-          # Pull latest changes
-          print_status "📥 Pulling latest changes..."
-          git pull origin main
+          # Stop existing landing container
+          docker stop royalprompts_landing || true
+          docker rm -f royalprompts_landing || true
           
-          # Login to GitHub Container Registry
-          print_status "🔐 Logging in to container registry..."
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "✅ Stopped existing landing container!"
+
+    - name: 🏗️ Build landing Docker image locally
+      run: |
+        cd landing
+        docker build -t royalprompts-landing:latest .
+        docker save royalprompts-landing:latest | gzip > ../landing-image.tar.gz
+        ls -la ../landing-image.tar.gz
+
+    - name: 📤 Copy built image to server
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "landing-image.tar.gz"
+        target: "/root/royalprompts-main/"
+
+    - name: 📤 Copy docker-compose file
+      uses: appleboy/scp-action@v0.1.4
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        source: "docker-compose.landing.yml"
+        target: "/root/royalprompts-main/"
+
+    - name: 🚀 Start landing page
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          cd /root/royalprompts-main
           
-          # Pull latest landing image
-          print_status "📥 Pulling latest landing image..."
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          
-          # Stop existing container
-          print_status "🛑 Stopping existing container..."
-          docker stop royalprompts_landing 2>/dev/null || true
-          docker rm royalprompts_landing 2>/dev/null || true
-          
-          # Run new container
-          print_status "🚀 Starting new container..."
-          docker run -d \
-            --name royalprompts_landing \
-            --restart unless-stopped \
-            -p 4321:80 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          
-          # Wait for health check
-          print_status "⏳ Waiting for landing page to be healthy..."
-          for i in {1..30}; do
-            if curl -f http://localhost:4321/health > /dev/null 2>&1; then
-              print_success "✅ Landing page is healthy!"
-              break
-            fi
-            print_status "Attempt $i: Landing page not ready yet..."
-            sleep 5
-          done
-          
-          # Final health check
-          if curl -f http://localhost:4321/health > /dev/null 2>&1; then
-            print_success "🎉 Landing page deployed successfully!"
-            print_success "🌐 Landing page: http://localhost:4321"
-            print_success "🏥 Health check: http://localhost:4321/health"
+          # Check if image file exists
+          if [ -f "landing-image.tar.gz" ]; then
+            echo "✅ Image file found, loading..."
+            docker load < landing-image.tar.gz
+            rm landing-image.tar.gz
+            echo "✅ Image loaded successfully!"
           else
-            print_error "❌ Deployment failed! Landing page is not responding."
+            echo "❌ Image file not found! Available files:"
+            ls -la
             exit 1
           fi
-        EOF
+          
+          # Start landing page using docker-compose
+          docker-compose -f docker-compose.landing.yml up -d landing
+          
+          # Wait for landing page to be healthy
+          echo "Waiting for landing page to be healthy..."
+          for i in {1..30}; do
+            if curl -f http://localhost:4321/health > /dev/null 2>&1; then
+              echo "✅ Landing page is healthy after $i attempts!"
+              break
+            fi
+            echo "Attempt $i: Landing page not ready yet..."
+            sleep 10
+          done
+          
+          # Show deployment status
+          echo "=== Container Status ==="
+          docker ps
+          echo "=== Landing Page Logs ==="
+          docker logs --tail=30 royalprompts_landing
+
+    - name: 🔍 Verify deployment
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: ${{ secrets.DROPLET_USERNAME }}
+        key: ${{ secrets.DROPLET_SSH_KEY }}
+        port: ${{ secrets.DROPLET_PORT || 22 }}
+        script: |
+          # Test landing page health endpoint
+          if curl -f http://localhost:4321/health > /dev/null 2>&1; then
+            echo "✅ Landing page deployment verified!"
+            echo "🌐 Landing Page: http://${{ secrets.DROPLET_HOST }}:4321"
+            echo "🎨 Admin Panel: http://${{ secrets.DROPLET_HOST }}:3000"
+            echo "🔗 API: http://${{ secrets.DROPLET_HOST }}:8000"
+            echo "🏥 Health check: http://${{ secrets.DROPLET_HOST }}:4321/health"
+          else
+            echo "❌ Landing page health check failed!"
+            echo "=== Debug Info ==="
+            docker ps
+            docker logs --tail=50 royalprompts_landing
+            exit 1
+          fi
+
+    - name: 📢 Deployment Status
+      run: |
+        echo "🎉 Landing page deployed successfully!"
+        echo "🌐 Landing Page: http://${{ secrets.DROPLET_HOST }}:4321"
+        echo "🎨 Admin Panel: http://${{ secrets.DROPLET_HOST }}:3000"
+        echo "🔗 API: http://${{ secrets.DROPLET_HOST }}:8000"
+        echo "🏥 Health: http://${{ secrets.DROPLET_HOST }}:4321/health"
