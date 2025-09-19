@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # Astro Landing Page - Simple deployment
+  landing:
+    build:
+      context: ./landing
+      dockerfile: Dockerfile
+    container_name: royalprompts_landing
+    restart: unless-stopped
+    ports:
+      - "4321:80"  # Port 4321 (Astro default, 8000=backend, 3000=admin)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
