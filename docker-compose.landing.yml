@@ -1,11 +1,7 @@
-version: '3.8'
-
 services:
   # Astro Landing Page - Simple deployment
   landing:
-    build:
-      context: ./landing
-      dockerfile: Dockerfile
+    image: royalprompts-landing:latest
     container_name: royalprompts_landing
     restart: unless-stopped
     ports:
