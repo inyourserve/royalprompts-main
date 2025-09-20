@@ -4,6 +4,6 @@ import tailwind from '@astrojs/tailwind';
 // https://astro.build/config
 export default defineConfig({
   integrations: [tailwind()],
-  site: 'http://royalprompts.online',
+  site: 'https://royalprompts.online',
   output: 'static'
 });

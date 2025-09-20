@@ -19,30 +19,31 @@ import Layout from '../layouts/Layout.astro';
       
       <h3 class="text-xl font-medium text-gray-900 mt-6 mb-3">1.1 Information You Provide</h3>
       <ul class="list-disc pl-6 text-gray-600 mb-4">
-        <li>Account information (username, email address)</li>
-        <li>Profile information and preferences</li>
-        <li>Prompts you create, save, or share</li>
-        <li>Feedback and support communications</li>
+        <li><strong>Contact Form Data:</strong> When you contact us through our website, we collect your first name, last name, email address, subject of inquiry, and message content</li>
+        <li><strong>App Usage Data:</strong> Prompts you create, save, favorite, or interact with within the mobile application</li>
+        <li><strong>Feedback and Support:</strong> Any feedback, bug reports, or support communications you send to us</li>
+        <li><strong>Public Content:</strong> Any prompts or content you choose to make public within the app community</li>
       </ul>
 
       <h3 class="text-xl font-medium text-gray-900 mt-6 mb-3">1.2 Information We Collect Automatically</h3>
       <ul class="list-disc pl-6 text-gray-600 mb-4">
-        <li>Device information (device type, operating system, unique device identifiers)</li>
-        <li>Usage data (features used, time spent in app, interactions)</li>
-        <li>Log data (IP address, access times, app crashes)</li>
-        <li>Location data (if you grant permission)</li>
+        <li><strong>Device Information:</strong> Unique device identifier (UUID), device type (Android/iOS/Web), device model, operating system version, and app version</li>
+        <li><strong>Usage Analytics:</strong> Features used, time spent in app, number of requests, daily usage patterns, and interaction data</li>
+        <li><strong>Technical Data:</strong> IP address, user agent string, access timestamps, app crashes, and error logs</li>
+        <li><strong>Geographic Data:</strong> Country information derived from IP address (no precise location tracking)</li>
+        <li><strong>Website Analytics:</strong> When you visit our website, we may collect information about your browsing behavior, pages visited, and referral sources</li>
       </ul>
 
       <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">2. How We Use Your Information</h2>
       <p class="text-gray-600 mb-4">We use the information we collect to:</p>
       <ul class="list-disc pl-6 text-gray-600 mb-4">
-        <li>Provide, maintain, and improve our Service</li>
-        <li>Personalize your experience and content</li>
-        <li>Process transactions and send related information</li>
-        <li>Send technical notices, updates, and support messages</li>
-        <li>Respond to your comments and questions</li>
-        <li>Monitor and analyze usage and trends</li>
-        <li>Detect, prevent, and address technical issues</li>
+        <li><strong>Service Delivery:</strong> Provide, maintain, and improve our mobile application and website services</li>
+        <li><strong>Personalization:</strong> Customize your experience, recommend relevant prompts, and remember your preferences</li>
+        <li><strong>Communication:</strong> Respond to your contact form submissions, support requests, and feedback</li>
+        <li><strong>Analytics:</strong> Monitor app performance, usage patterns, and user engagement to improve our services</li>
+        <li><strong>Technical Support:</strong> Diagnose and resolve technical issues, app crashes, and performance problems</li>
+        <li><strong>Security:</strong> Detect and prevent abuse, fraud, and unauthorized access to our services</li>
+        <li><strong>Legal Compliance:</strong> Comply with applicable laws and regulations</li>
       </ul>
 
       <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">3. Information Sharing and Disclosure</h2>
@@ -60,12 +61,35 @@ import Layout from '../layouts/Layout.astro';
         We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet or electronic storage is 100% secure.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">5. Data Retention</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">5. Device-Based User Model</h2>
       <p class="text-gray-600 mb-4">
-        We retain your information for as long as necessary to provide our Service and fulfill the purposes outlined in this Privacy Policy, unless a longer retention period is required or permitted by law.
+        RoyalPrompt uses a device-based user model that does not require traditional account registration. Instead, we:
+      </p>
+      <ul class="list-disc pl-6 text-gray-600 mb-4">
+        <li>Generate a unique device identifier (UUID) when you first use the app</li>
+        <li>Associate your app usage, favorites, and preferences with this device identifier</li>
+        <li>Allow you to use the app without providing personal information like email or name</li>
+        <li>Enable cross-device synchronization when you choose to link devices</li>
+      </ul>
+      <p class="text-gray-600 mb-4">
+        This approach prioritizes user privacy while still providing a personalized experience.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">6. Your Rights and Choices</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">6. Data Retention</h2>
+      <p class="text-gray-600 mb-4">
+        We retain your information for as long as necessary to provide our Service and fulfill the purposes outlined in this Privacy Policy:
+      </p>
+      <ul class="list-disc pl-6 text-gray-600 mb-4">
+        <li><strong>Contact Form Data:</strong> Retained for up to 3 years for customer service and legal purposes</li>
+        <li><strong>Device Usage Data:</strong> Retained for up to 2 years for analytics and service improvement</li>
+        <li><strong>App Content:</strong> Your created prompts and favorites are retained until you delete them or uninstall the app</li>
+        <li><strong>Technical Logs:</strong> Retained for up to 1 year for security and debugging purposes</li>
+      </ul>
+      <p class="text-gray-600 mb-4">
+        You can request deletion of your data at any time by contacting us at privacy@royalprompt.app.
+      </p>
+
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">7. Your Rights and Choices</h2>
       <p class="text-gray-600 mb-4">Depending on your location, you may have the following rights:</p>
       <ul class="list-disc pl-6 text-gray-600 mb-4">
         <li>Access and update your personal information</li>
@@ -75,27 +99,27 @@ import Layout from '../layouts/Layout.astro';
         <li>Object to processing of your personal information</li>
       </ul>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">7. Children's Privacy</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">8. Children's Privacy</h2>
       <p class="text-gray-600 mb-4">
         Our Service is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">8. Third-Party Services</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">9. Third-Party Services</h2>
       <p class="text-gray-600 mb-4">
         Our Service may contain links to third-party websites or services. We are not responsible for the privacy practices of these third parties. We encourage you to read their privacy policies.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">9. International Data Transfers</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">10. International Data Transfers</h2>
       <p class="text-gray-600 mb-4">
         Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your information in accordance with this Privacy Policy.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">10. Changes to This Privacy Policy</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">11. Changes to This Privacy Policy</h2>
       <p class="text-gray-600 mb-4">
         We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
       </p>
 
-      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">11. Contact Us</h2>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-8 mb-4">12. Contact Us</h2>
       <p class="text-gray-600 mb-4">
         If you have any questions about this Privacy Policy, please contact us at:
       </p>

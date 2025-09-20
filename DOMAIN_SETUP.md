@@ -6,8 +6,9 @@ This guide will help you configure your domain `royalprompts.online` to serve yo
 
 - **Domain**: `royalprompts.online`
 - **Server**: DigitalOcean droplet
-- **Landing Page**: Running on port 4321
-- **Target URL**: `http://royalprompts.online` (clean URL, no port needed)
+- **Landing Page**: Port 4321 → `http://royalprompts.online`
+- **Admin Panel**: Port 3000 → `http://royalprompts.online/admin`
+- **Backend API**: Port 8000 → `http://royalprompts.online/api`
 
 ## 📋 Prerequisites
 
@@ -145,6 +146,8 @@ After setup, your users can access:
 - ✅ `http://royalprompts.online/terms` → Terms page
 - ✅ `http://royalprompts.online/about` → About page
 - ✅ `http://royalprompts.online/contact` → Contact page
+- ✅ `http://royalprompts.online/admin` → Admin panel
+- ✅ `http://royalprompts.online/api` → Backend API
 
 ## 🔄 CI/CD Integration
 
