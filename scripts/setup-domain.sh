@@ -23,9 +23,23 @@ fi
 # Create the domain configuration
 echo "📝 Creating Nginx configuration for royalprompts.online..."
 cat > /etc/nginx/sites-available/royalprompts.online << 'EOF'
+# HTTP server - redirect to HTTPS
 server {
     listen 80;
     server_name royalprompts.online www.royalprompts.online;
+    return 301 https://$server_name$request_uri;
+}
+
+# HTTPS server for main domain (landing page)
+server {
+    listen 443 ssl http2;
+    server_name royalprompts.online www.royalprompts.online;
+
+    # SSL configuration (will be updated by certbot)
+    ssl_certificate /etc/letsencrypt/live/royalprompts.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/royalprompts.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     # Landing page - Default routes (port 4321)
     location / {
@@ -45,6 +59,67 @@ server {
     location /health {
         proxy_pass http://localhost:4321/health;
         proxy_set_header Host $host;
+    }
+}
+
+# HTTPS server for admin panel (port 3000)
+server {
+    listen 3000 ssl http2;
+    server_name royalprompts.online www.royalprompts.online;
+
+    # SSL configuration
+    ssl_certificate /etc/letsencrypt/live/royalprompts.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/royalprompts.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Handle WebSocket connections for admin panel
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# HTTPS server for backend API (port 8000)
+server {
+    listen 8000 ssl http2;
+    server_name royalprompts.online www.royalprompts.online;
+
+    # SSL configuration
+    ssl_certificate /etc/letsencrypt/live/royalprompts.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/royalprompts.online/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Handle CORS for API
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
+        
+        # Handle preflight requests
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin *;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
+            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
+            add_header Access-Control-Max-Age 1728000;
+            add_header Content-Type 'text/plain; charset=utf-8';
+            add_header Content-Length 0;
+            return 204;
+        }
     }
 }
 EOF
@@ -76,9 +151,12 @@ if [ $? -eq 0 ]; then
     echo "🎉 Domain setup complete!"
     echo ""
     echo "Your services should now be accessible at:"
-    echo "  🌐 http://royalprompts.online (Landing Page - Port 4321)"
-    echo "  🔧 http://royalprompts.online:3000 (Admin Panel - Direct Port Access)"
-    echo "  📡 http://royalprompts.online:8000 (Backend API - Direct Port Access)"
+    echo "  🌐 https://royalprompts.online (Landing Page - HTTPS)"
+    echo "  🔧 https://royalprompts.online:3000 (Admin Panel - HTTPS)"
+    echo "  📡 https://royalprompts.online:8000 (Backend API - HTTPS)"
+    echo ""
+    echo "Note: Make sure SSL certificates are installed with:"
+    echo "  sudo certbot --nginx -d royalprompts.online -d www.royalprompts.online"
     echo ""
     echo "Make sure all containers are running:"
     echo "  docker ps | grep royalprompts"
