@@ -29,7 +29,7 @@ COPY public ./public
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV NEXT_BUILD_WORKERS=1
-ENV NEXT_PUBLIC_API_URL=http://134.209.147.231:8000
+ENV NEXT_PUBLIC_API_URL=https://royalprompts.online:8443
 
 # Build with error handling
 RUN npm run build || (echo "Build failed, trying with more memory..." && NODE_OPTIONS="--max-old-space-size=8192" npm run build)
@@ -40,7 +40,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_PUBLIC_API_URL=http://134.209.147.231:8000
+ENV NEXT_PUBLIC_API_URL=https://royalprompts.online:8443
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

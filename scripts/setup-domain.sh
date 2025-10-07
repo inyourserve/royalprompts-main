@@ -32,7 +32,8 @@ server {
 
 # HTTPS server for main domain (landing page)
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    http2 on;
     server_name royalprompts.online www.royalprompts.online;
 
     # SSL configuration (will be updated by certbot)
@@ -62,16 +63,17 @@ server {
     }
 }
 
-# HTTP server for admin panel (port 3000) - redirect to HTTPS
+# HTTP server for admin panel (port 3443) - redirect to HTTPS
 server {
-    listen 3000;
+    listen 3443;
     server_name royalprompts.online www.royalprompts.online;
-    return 301 https://royalprompts.online:3000$request_uri;
+    return 301 https://royalprompts.online:3443$request_uri;
 }
 
-# HTTPS server for admin panel (port 3000)
+# HTTPS server for admin panel (port 3443)
 server {
-    listen 3000 ssl http2;
+    listen 3443 ssl;
+    http2 on;
     server_name royalprompts.online www.royalprompts.online;
 
     # SSL configuration
@@ -81,7 +83,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://frontend:3000;
+        proxy_pass http://localhost:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -94,16 +96,17 @@ server {
     }
 }
 
-# HTTP server for backend API (port 8000) - redirect to HTTPS
+# HTTP server for backend API (port 8443) - redirect to HTTPS
 server {
-    listen 8000;
+    listen 8443;
     server_name royalprompts.online www.royalprompts.online;
-    return 301 https://royalprompts.online:8000$request_uri;
+    return 301 https://royalprompts.online:8443$request_uri;
 }
 
-# HTTPS server for backend API (port 8000)
+# HTTPS server for backend API (port 8443)
 server {
-    listen 8000 ssl http2;
+    listen 8443 ssl;
+    http2 on;
     server_name royalprompts.online www.royalprompts.online;
 
     # SSL configuration
@@ -113,22 +116,24 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://backend:8000;
+        proxy_pass http://localhost:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         
-        # Handle CORS for API
-        add_header Access-Control-Allow-Origin *;
-        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
-        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
+        # Handle CORS for API - Allow admin panel origin
+        add_header Access-Control-Allow-Origin "https://royalprompts.online:3443" always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
+        add_header Access-Control-Allow-Credentials "true" always;
         
         # Handle preflight requests
         if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin *;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
-            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
+            add_header Access-Control-Allow-Origin "https://royalprompts.online:3443" always;
+            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
+            add_header Access-Control-Allow-Credentials "true" always;
             add_header Access-Control-Max-Age 1728000;
             add_header Content-Type 'text/plain; charset=utf-8';
             add_header Content-Length 0;
@@ -166,8 +171,8 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Your services should now be accessible at:"
     echo "  🌐 https://royalprompts.online (Landing Page - HTTPS)"
-    echo "  🔧 https://royalprompts.online:3000 (Admin Panel - HTTPS)"
-    echo "  📡 https://royalprompts.online:8000 (Backend API - HTTPS)"
+    echo "  🔧 https://royalprompts.online:3443 (Admin Panel - HTTPS)"
+    echo "  📡 https://royalprompts.online:8443 (Backend API - HTTPS)"
     echo ""
     echo "Note: Make sure SSL certificates are installed with:"
     echo "  sudo certbot --nginx -d royalprompts.online -d www.royalprompts.online"

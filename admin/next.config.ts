@@ -27,9 +27,9 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'http',
-        hostname: '134.209.147.231',
-        port: '8000',
+        protocol: 'https',
+        hostname: 'royalprompts.online',
+        port: '8443',
         pathname: '/uploads/**',
       },
     ],
