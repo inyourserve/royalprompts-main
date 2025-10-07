@@ -1,15 +1,33 @@
-version: '3.8'
-
 services:
-  # FastAPI Backend - Direct exposure for production
+  # Nginx reverse proxy for SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: royalprompts_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "3000:3000"
+      - "8000:8000"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - frontend
+      - landing
+    networks:
+      - royalprompts_network
+
+  # FastAPI Backend - Internal exposure only
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
     container_name: royalprompts_backend
     restart: unless-stopped
-    ports:
-      - "8000:8000"  # Direct port exposure
+    expose:
+      - "8000"  # Internal exposure only
     environment:
       MONGODB_URL: ${MONGODB_URL}
       SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-this-in-production}
@@ -31,15 +49,15 @@ services:
       retries: 3
       start_period: 60s
 
-  # Next.js Frontend - Direct exposure for production
+  # Next.js Frontend - Internal exposure only
   frontend:
     build:
       context: ./admin
       dockerfile: Dockerfile
     container_name: royalprompts_frontend
     restart: unless-stopped
-    ports:
-      - "3000:3000"  # Direct port exposure
+    expose:
+      - "3000"  # Internal exposure only
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
       NODE_ENV: production
@@ -54,15 +72,15 @@ services:
       timeout: 10s
       retries: 3
 
-  # Astro Landing Page - Direct exposure for production
+  # Astro Landing Page - Internal exposure only
   landing:
     build:
       context: ./landing
       dockerfile: Dockerfile
     container_name: royalprompts_landing
     restart: unless-stopped
-    ports:
-      - "4321:80"  # Direct port exposure
+    expose:
+      - "80"  # Internal exposure only
     networks:
       - royalprompts_network
     healthcheck:

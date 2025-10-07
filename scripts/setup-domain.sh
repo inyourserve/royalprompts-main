@@ -62,6 +62,13 @@ server {
     }
 }
 
+# HTTP server for admin panel (port 3000) - redirect to HTTPS
+server {
+    listen 3000;
+    server_name royalprompts.online www.royalprompts.online;
+    return 301 https://royalprompts.online:3000$request_uri;
+}
+
 # HTTPS server for admin panel (port 3000)
 server {
     listen 3000 ssl http2;
@@ -74,7 +81,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://frontend:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -85,6 +92,13 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
     }
+}
+
+# HTTP server for backend API (port 8000) - redirect to HTTPS
+server {
+    listen 8000;
+    server_name royalprompts.online www.royalprompts.online;
+    return 301 https://royalprompts.online:8000$request_uri;
 }
 
 # HTTPS server for backend API (port 8000)
@@ -99,7 +113,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://backend:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
