@@ -27,45 +27,6 @@ server {
     listen 80;
     server_name royalprompts.online www.royalprompts.online;
 
-    # API routes - Backend (port 8000)
-    location /api/ {
-        proxy_pass http://localhost:8000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Handle CORS for API
-        add_header Access-Control-Allow-Origin *;
-        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
-        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
-        
-        # Handle preflight requests
-        if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin *;
-            add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS";
-            add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization";
-            add_header Access-Control-Max-Age 1728000;
-            add_header Content-Type 'text/plain; charset=utf-8';
-            add_header Content-Length 0;
-            return 204;
-        }
-    }
-
-    # Admin routes - Frontend/Admin Panel (port 3000)
-    location /admin/ {
-        proxy_pass http://localhost:3000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        # Handle WebSocket connections for admin panel
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-
     # Landing page - Default routes (port 4321)
     location / {
         proxy_pass http://localhost:4321;
@@ -80,19 +41,9 @@ server {
         proxy_set_header Connection "upgrade";
     }
 
-    # Health check endpoints
+    # Health check endpoint for landing page
     location /health {
         proxy_pass http://localhost:4321/health;
-        proxy_set_header Host $host;
-    }
-    
-    location /api/health {
-        proxy_pass http://localhost:8000/health;
-        proxy_set_header Host $host;
-    }
-    
-    location /admin/health {
-        proxy_pass http://localhost:3000/health;
         proxy_set_header Host $host;
     }
 }
@@ -126,8 +77,8 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Your services should now be accessible at:"
     echo "  🌐 http://royalprompts.online (Landing Page - Port 4321)"
-    echo "  🔧 http://royalprompts.online/admin (Admin Panel - Port 3000)"
-    echo "  📡 http://royalprompts.online/api (Backend API - Port 8000)"
+    echo "  🔧 http://royalprompts.online:3000 (Admin Panel - Direct Port Access)"
+    echo "  📡 http://royalprompts.online:8000 (Backend API - Direct Port Access)"
     echo ""
     echo "Make sure all containers are running:"
     echo "  docker ps | grep royalprompts"
