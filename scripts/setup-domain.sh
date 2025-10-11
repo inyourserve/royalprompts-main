@@ -115,6 +115,9 @@ server {
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
+    # Increase upload size limit for image uploads
+    client_max_body_size 20M;
+
     location / {
         proxy_pass http://localhost:8000;
         proxy_set_header Host $host;
@@ -123,14 +126,19 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         
         # Handle CORS for API - Allow admin panel origin
-        add_header Access-Control-Allow-Origin "https://royalprompts.online:3443" always;
+        set $cors_origin "";
+        if ($http_origin ~* "^https://royalprompts\.online:3443$") {
+            set $cors_origin $http_origin;
+        }
+        
+        add_header Access-Control-Allow-Origin $cors_origin always;
         add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
         add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
         add_header Access-Control-Allow-Credentials "true" always;
         
         # Handle preflight requests
         if ($request_method = 'OPTIONS') {
-            add_header Access-Control-Allow-Origin "https://royalprompts.online:3443" always;
+            add_header Access-Control-Allow-Origin $cors_origin always;
             add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
             add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
             add_header Access-Control-Allow-Credentials "true" always;

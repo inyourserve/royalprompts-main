@@ -413,7 +413,7 @@ class FileUploadManager:
         
         # Validate saved file
         if not os.path.exists(temp_path) or os.path.getsize(temp_path) == 0:
-            raise HTTPException(status_code=500, detail="Failed to save temp file")
+            raise HTTPException(status_code=500, detail="Failed to save temporary file")
         
         # Validate that the saved file is actually a valid image
         try:

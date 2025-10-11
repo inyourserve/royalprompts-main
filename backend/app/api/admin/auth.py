@@ -1,6 +1,7 @@
 """
 Admin Panel Authentication Endpoints
 Handles admin login and profile management
+check 1 mb
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 
