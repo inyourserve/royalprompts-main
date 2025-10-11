@@ -38,7 +38,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       DOCKER_ENV: "true"
     volumes:
-      - uploads_data:/app/uploads
+      - /var/royalprompts/uploads:/app/uploads  # Host bind mount for persistent storage
       - ./backend/logs:/app/logs
     networks:
       - royalprompts_network
@@ -89,10 +89,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-volumes:
-  uploads_data:
-    driver: local
 
 networks:
   royalprompts_network:

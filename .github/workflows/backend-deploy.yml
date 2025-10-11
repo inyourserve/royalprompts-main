@@ -67,6 +67,13 @@ jobs:
         script: |
           cd /root/royalprompts-main
           
+          # Create persistent uploads directory
+          echo "📁 Creating uploads directory..."
+          mkdir -p /var/royalprompts/uploads/images
+          mkdir -p /var/royalprompts/uploads/thumbnails
+          mkdir -p /var/royalprompts/uploads/temp
+          chmod -R 755 /var/royalprompts/uploads
+          
           # Create .env file with production configuration
           cat > .env << EOF
           MONGODB_URL=mongodb+srv://royalprompts_db_user:3ieah9FIEj7EDk7a@royalprompts.dypfief.mongodb.net/royalprompts?retryWrites=true&w=majority
