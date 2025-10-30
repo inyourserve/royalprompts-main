@@ -64,15 +64,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.clients = {}
         
         # Define rate limits for different endpoint types
+        # Order matters: more specific paths should come first!
         self.rate_limits = {
+            # Authentication endpoints - MOST STRICT (prevent brute force)
+            "/api/admin/auth": {"calls": 20, "period": 60},  # Admin login/auth: 20/min
+            "/api/mobile/auth": {"calls": 20, "period": 60},  # Mobile login/auth: 20/min
+            
             # Mobile API - Very generous (users browsing, favoriting prompts)
-            "/api/mobile": {"calls": 5000, "period": 60},  # 5000 requests/min for mobile users
+            "/api/mobile": {"calls": 5000, "period": 60},  # Mobile operations: 5000/min
             
             # Admin API - Moderate limits (fewer admins, CRUD operations)
-            "/api/admin": {"calls": 500, "period": 60},  # 500 requests/min for admins
-            
-            # Authentication - Strict (prevent brute force)
-            "/api/auth": {"calls": 20, "period": 60},  # 20 login attempts per minute
+            "/api/admin": {"calls": 500, "period": 60},  # Admin operations: 500/min
             
             # Default for other endpoints
             "default": {"calls": 1000, "period": 60}
@@ -107,8 +109,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         else:
             client_ip = request.client.host if request.client else "unknown"
         
-        # Create unique key for this IP + path prefix
-        rate_limit_key = f"{client_ip}:{path.split('/')[1] if '/' in path else 'root'}"
+        # Determine which rate limit category this path belongs to
+        rate_limit_category = "default"
+        for prefix in self.rate_limits.keys():
+            if prefix != "default" and path.startswith(prefix):
+                rate_limit_category = prefix
+                break
+        
+        # Create unique key for this IP + rate limit category
+        rate_limit_key = f"{client_ip}:{rate_limit_category}"
         current_time = time.time()
         
         # Clean old entries (older than period)
