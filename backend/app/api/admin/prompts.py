@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("", tags=["Admin Prompts"])
 async def get_admin_prompts(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, le=100),
+    limit: int = Query(10, le=100),
     search: Optional[str] = Query(None),
     category_id: Optional[str] = Query(None),
     status: Optional[str] = Query(None),

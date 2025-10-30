@@ -16,7 +16,7 @@ router = APIRouter()
 @router.get("", tags=["Admin Categories"])
 async def get_admin_categories(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, le=100),
+    limit: int = Query(10, le=100),
     search: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     current_admin = Depends(get_current_admin)
