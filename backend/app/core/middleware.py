@@ -57,59 +57,90 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Simple rate limiting middleware"""
+    """Smart rate limiting middleware with different limits for different endpoints"""
     
-    def __init__(self, app, calls: int = 1000, period: int = 60):
+    def __init__(self, app):
         super().__init__(app)
-        self.calls = calls
-        self.period = period
         self.clients = {}
-        # Paths to exclude from rate limiting
-        self.exclude_paths = ["/health", "/docs", "/redoc", "/openapi.json"]
+        
+        # Define rate limits for different endpoint types
+        self.rate_limits = {
+            # Mobile API - Very generous (users browsing, favoriting prompts)
+            "/api/mobile": {"calls": 5000, "period": 60},  # 5000 requests/min for mobile users
+            
+            # Admin API - Moderate limits (fewer admins, CRUD operations)
+            "/api/admin": {"calls": 500, "period": 60},  # 500 requests/min for admins
+            
+            # Authentication - Strict (prevent brute force)
+            "/api/auth": {"calls": 20, "period": 60},  # 20 login attempts per minute
+            
+            # Default for other endpoints
+            "default": {"calls": 1000, "period": 60}
+        }
+        
+        # Paths to exclude from rate limiting entirely
+        self.exclude_paths = ["/health", "/docs", "/redoc", "/openapi.json", "/"]
+    
+    def get_rate_limit(self, path: str) -> dict:
+        """Get rate limit configuration for a given path"""
+        for prefix, limit in self.rate_limits.items():
+            if path.startswith(prefix):
+                return limit
+        return self.rate_limits["default"]
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip rate limiting for health checks and docs
-        if any(request.url.path.startswith(path) for path in self.exclude_paths):
+        path = request.url.path
+        
+        # Skip rate limiting for excluded paths
+        if any(path.startswith(excluded) for excluded in self.exclude_paths):
             return await call_next(request)
+        
+        # Get rate limit for this endpoint
+        rate_limit = self.get_rate_limit(path)
+        max_calls = rate_limit["calls"]
+        period = rate_limit["period"]
         
         # Get real client IP from X-Forwarded-For header (from Nginx proxy)
         forwarded_for = request.headers.get("X-Forwarded-For")
         if forwarded_for:
-            # X-Forwarded-For can be a comma-separated list, take the first IP
             client_ip = forwarded_for.split(",")[0].strip()
         else:
             client_ip = request.client.host if request.client else "unknown"
         
+        # Create unique key for this IP + path prefix
+        rate_limit_key = f"{client_ip}:{path.split('/')[1] if '/' in path else 'root'}"
         current_time = time.time()
         
-        # Clean old entries (entries older than period)
+        # Clean old entries (older than period)
         self.clients = {
-            ip: (calls, start_time) 
-            for ip, (calls, start_time) in self.clients.items()
-            if current_time - start_time < self.period
+            key: (calls, start_time) 
+            for key, (calls, start_time) in self.clients.items()
+            if current_time - start_time < period
         }
         
         # Check rate limit
-        if client_ip in self.clients:
-            calls_made, start_time = self.clients[client_ip]
-            if current_time - start_time < self.period:
-                if calls_made >= self.calls:
+        if rate_limit_key in self.clients:
+            calls_made, start_time = self.clients[rate_limit_key]
+            if current_time - start_time < period:
+                if calls_made >= max_calls:
                     from fastapi import HTTPException, status
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                        detail=f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds."
+                        detail=f"Rate limit exceeded. Max {max_calls} requests per {period} seconds for this endpoint."
                     )
-                self.clients[client_ip] = (calls_made + 1, start_time)
+                self.clients[rate_limit_key] = (calls_made + 1, start_time)
             else:
-                self.clients[client_ip] = (1, current_time)
+                self.clients[rate_limit_key] = (1, current_time)
         else:
-            self.clients[client_ip] = (1, current_time)
+            self.clients[rate_limit_key] = (1, current_time)
         
         response = await call_next(request)
         
         # Add rate limit headers for transparency
-        response.headers["X-RateLimit-Limit"] = str(self.calls)
-        response.headers["X-RateLimit-Remaining"] = str(self.calls - self.clients.get(client_ip, (0, 0))[0])
+        current_calls = self.clients.get(rate_limit_key, (0, 0))[0]
+        response.headers["X-RateLimit-Limit"] = str(max_calls)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, max_calls - current_calls))
+        response.headers["X-RateLimit-Reset"] = str(int(self.clients.get(rate_limit_key, (0, current_time))[1] + period))
         
         return response
 
@@ -138,5 +169,5 @@ def setup_middleware(app):
     
     # Add rate limiting middleware (only in production)
     if settings.ENVIRONMENT == "production":
-        # Allow 1000 requests per minute per IP (generous for API usage)
-        app.add_middleware(RateLimitMiddleware, calls=1000, period=60)
+        # Smart rate limiting with different limits per endpoint type
+        app.add_middleware(RateLimitMiddleware)
