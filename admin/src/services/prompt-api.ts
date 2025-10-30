@@ -27,7 +27,21 @@ export class PromptApiService extends BaseApiService {
     const queryString = searchParams.toString();
     const endpoint = `/api/admin/prompts${queryString ? `?${queryString}` : ''}`;
     
-    return this.request<PaginatedResponse<PromptAdmin>>(endpoint);
+    console.log('🔍 Frontend: Requesting prompts with filters:', filters);
+    console.log('🔗 Frontend: API endpoint:', endpoint);
+    
+    const response = await this.request<PaginatedResponse<PromptAdmin>>(endpoint);
+    
+    console.log('📦 Frontend: Received response:', {
+      itemsCount: response.items?.length,
+      total: response.total,
+      page: response.page,
+      limit: response.limit,
+      firstItemTitle: response.items?.[0]?.title,
+      lastItemTitle: response.items?.[response.items?.length - 1]?.title
+    });
+    
+    return response;
   }
 
   async getPromptById(id: string): Promise<PromptAdmin> {

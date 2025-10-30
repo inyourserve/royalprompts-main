@@ -70,14 +70,21 @@ class DeviceUser(Document):
         self.last_request_date = now
         
     
-    def has_unlocked_prompt(self, prompt_id: str) -> bool:
-        """Check if user has unlocked a specific prompt"""
-        # For now, all prompts are unlocked (no premium features)
-        # In the future, this could check a separate 'unlocked_prompts' collection
-        return True
+    async def has_unlocked_prompt(self, prompt_id: str) -> bool:
+        """Check if user has unlocked a specific prompt (always returns False for ad-based monetization)"""
+        # Always return False so users must unlock (watch ad) every time
+        # This maximizes ad revenue
+        return False
     
-    def unlock_prompt(self, prompt_id: str) -> None:
-        """Unlock a prompt for this device"""
-        # For now, all prompts are unlocked (no premium features)
-        # In the future, this could add to a separate 'unlocked_prompts' collection
-        pass
+    async def unlock_prompt(self, prompt_id: str) -> bool:
+        """Unlock a prompt for this device (creates unlock record for ad tracking)"""
+        from app.models.unlock import Unlock
+        
+        # Always create a new unlock record (no duplicate checking)
+        # Each unlock = one ad view = revenue
+        unlock = Unlock(
+            device_id=self.device_id,
+            prompt_id=prompt_id
+        )
+        await unlock.create()
+        return True  # Always newly unlocked

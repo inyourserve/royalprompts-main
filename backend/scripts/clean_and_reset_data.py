@@ -82,7 +82,7 @@ async def clean_and_reset_data():
         
         from app.schemas.common import PaginationParams
         prompt_service = PromptService()
-        prompts_result = await prompt_service.get_multi(PaginationParams(skip=0, limit=20))
+        prompts_result = await prompt_service.get_multi(PaginationParams(page=1, size=20))
         prompts = prompts_result.items
         
         if not prompts:

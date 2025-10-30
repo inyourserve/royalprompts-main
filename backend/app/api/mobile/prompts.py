@@ -28,19 +28,24 @@ async def browse_prompts(
     Supports filtering by category_id and search terms
     """
     prompt_service = PromptService()
-    pagination = PaginationParams(skip=(page-1)*limit, limit=limit)
+    pagination = PaginationParams(page=page, size=limit)
     
     if category_id:
-        # Filter prompts by category ID
-        prompts = await prompt_service.get_by_category(category_id, limit=limit)
-        total = len(prompts)
+        # Filter prompts by category ID with pagination
+        prompts = await prompt_service.get_by_category(category_id, skip=pagination.skip, limit=limit)
+        # Count total for category
+        from app.models.prompt import PromptStatus
+        total = await prompt_service.repository.count({
+            "category_id": category_id,
+            "status": PromptStatus.PUBLISHED,
+            "is_active": True
+        })
     elif search:
-        # Search prompts by search term
-        prompts = await prompt_service.search(search, limit=limit)
-        total = len(prompts)
+        # Search prompts by search term with pagination
+        prompts, total = await prompt_service.search(search, skip=pagination.skip, limit=limit)
     else:
-        # Get all published prompts
-        result = await prompt_service.get_multi(pagination, {"status": "published"})
+        # Get all published prompts with sorting
+        result = await prompt_service.get_multi(pagination, {"status": "published"}, sort_by="created_at", sort_order=-1)
         prompts = result.items
         total = result.total
     
@@ -49,7 +54,7 @@ async def browse_prompts(
     for prompt in prompts:
         prompt_dict = prompt.model_dump()
         prompt_dict["id"] = str(prompt.id)
-        prompt_dict["is_unlocked"] = device_user.has_unlocked_prompt(str(prompt.id))
+        prompt_dict["is_unlocked"] = await device_user.has_unlocked_prompt(str(prompt.id))
         items_with_status.append(PromptSummary.model_validate(prompt_dict))
     
     return PaginatedResponse.create(items_with_status, total, pagination)
@@ -68,7 +73,7 @@ async def get_prompt_detail(
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     
-    is_unlocked = device_user.has_unlocked_prompt(prompt_id)
+    is_unlocked = await device_user.has_unlocked_prompt(prompt_id)
     is_favorited = await favorite_service.is_favorited(device_user.device_id, prompt_id)
     
     # Increment view count
@@ -94,7 +99,10 @@ async def unlock_prompt(
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
     
-    device_user.unlock_prompt(prompt_id)
-    await device_user.save()
+    # Always create unlock record (for ad tracking)
+    await device_user.unlock_prompt(prompt_id)
     
-    return {"message": "Prompt unlocked successfully", "is_unlocked": True}
+    return {
+        "message": "Prompt unlocked successfully",
+        "is_unlocked": True
+    }

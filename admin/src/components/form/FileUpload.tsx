@@ -3,6 +3,7 @@ import React, { useState, useRef } from "react";
 import Label from "./Label";
 import Button from "../ui/button/Button";
 import { PlusIcon, CloseIcon, ImageIcon } from "@/icons";
+import { getFullImageUrl } from "@/utils/image";
 
 interface FileUploadProps {
   label: string;
@@ -155,9 +156,13 @@ export default function FileUpload({
             ) : uploadedImageUrl ? (
               <div className="mb-4">
                 <img
-                  src={uploadedImageUrl}
+                  src={getFullImageUrl(uploadedImageUrl)}
                   alt="Uploaded Preview"
                   className="max-h-48 mx-auto rounded-lg shadow-sm"
+                  onError={(e) => {
+                    console.error('Image failed to load:', uploadedImageUrl);
+                    console.error('Full URL:', getFullImageUrl(uploadedImageUrl));
+                  }}
                 />
                 <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                   ✅ Image uploaded successfully

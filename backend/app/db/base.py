@@ -118,11 +118,15 @@ class MongoRepository(BaseRepository[T]):
         """Find one document by filters"""
         return await self.model.find_one(filters)
     
-    async def find_many(self, filters: Dict[str, Any], limit: Optional[int] = None) -> List[T]:
-        """Find many documents by filters"""
+    async def find_many(self, filters: Dict[str, Any], skip: int = 0, limit: Optional[int] = None, sort: Optional[List[tuple]] = None) -> List[T]:
+        """Find many documents by filters with pagination and sorting"""
         query = self.model.find(filters)
+        if skip > 0:
+            query = query.skip(skip)
         if limit:
             query = query.limit(limit)
+        if sort:
+            query = query.sort(sort)
         return await query.to_list()
 
 

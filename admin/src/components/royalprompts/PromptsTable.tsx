@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Table,
   TableBody,
@@ -21,14 +21,17 @@ import ImagePreviewModal from "../common/ImagePreviewModal";
 
 export default function PromptsTable() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const searchParams = useSearchParams();
+  
+  // Initialize state from URL params
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || "");
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || "All");
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [prompts, setPrompts] = useState<PromptAdmin[]>([]);
   const [categories, setCategories] = useState<CategoryAdmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPrompts, setTotalPrompts] = useState(0);
   const [previewModal, setPreviewModal] = useState<{
     isOpen: boolean;
@@ -36,6 +39,17 @@ export default function PromptsTable() {
     title?: string;
   }>({ isOpen: false });
   const pageSize = 10;
+  
+  // Update URL when filters change
+  const updateURL = (page: number, search: string, category: string) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set('page', page.toString());
+    if (search) params.set('search', search);
+    if (category !== "All") params.set('category', category);
+    
+    const queryString = params.toString();
+    router.push(`/prompts${queryString ? `?${queryString}` : ''}`, { scroll: false });
+  };
 
   // Helper function to get category name from category ID
   const getCategoryName = (categoryId: string): string => {
@@ -108,14 +122,25 @@ export default function PromptsTable() {
     fetchData();
   }, [currentPage, searchTerm, selectedCategory]);
 
-  // Handle search with debouncing
+  // Handle search with debouncing and URL update
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
-      setCurrentPage(1); // Reset to first page when searching
+      const newPage = 1; // Reset to first page when searching
+      setCurrentPage(newPage);
+      updateURL(newPage, searchTerm, selectedCategory);
     }, 300);
 
     return () => clearTimeout(debounceTimer);
   }, [searchTerm]);
+  
+  // Update URL when category changes
+  useEffect(() => {
+    if (!loading) { // Don't update on initial load
+      const newPage = 1; // Reset to first page when changing category
+      setCurrentPage(newPage);
+      updateURL(newPage, searchTerm, selectedCategory);
+    }
+  }, [selectedCategory]);
 
   const handleDeletePrompt = async (promptId: string, promptTitle: string) => {
     if (confirm(`Are you sure you want to delete "${promptTitle}"? This action cannot be undone.`)) {
@@ -362,9 +387,13 @@ export default function PromptsTable() {
             {totalPrompts > pageSize && (
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => {
+                    const newPage = Math.max(1, currentPage - 1);
+                    setCurrentPage(newPage);
+                    updateURL(newPage, searchTerm, selectedCategory);
+                  }}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Previous
                 </button>
@@ -372,9 +401,13 @@ export default function PromptsTable() {
                   Page {currentPage} of {Math.ceil(totalPrompts / pageSize)}
                 </span>
                 <button
-                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  onClick={() => {
+                    const newPage = currentPage + 1;
+                    setCurrentPage(newPage);
+                    updateURL(newPage, searchTerm, selectedCategory);
+                  }}
                   disabled={currentPage >= Math.ceil(totalPrompts / pageSize)}
-                  className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1 text-sm border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800"
                 >
                   Next
                 </button>

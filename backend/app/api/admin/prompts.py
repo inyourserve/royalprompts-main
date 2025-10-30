@@ -25,7 +25,7 @@ async def get_admin_prompts(
 ):
     """Get prompts for admin table"""
     prompt_service = PromptService()
-    pagination = PaginationParams(skip=(page-1)*limit, limit=limit)
+    pagination = PaginationParams(page=page, size=limit)
     
     filters = {}
     if category_id:
@@ -34,10 +34,9 @@ async def get_admin_prompts(
         filters["status"] = status
     
     if search:
-        prompts = await prompt_service.search(search, limit=limit)
-        total = len(prompts)
+        prompts, total = await prompt_service.search(search, skip=pagination.skip, limit=limit)
     else:
-        result = await prompt_service.get_multi(pagination, filters)
+        result = await prompt_service.get_multi(pagination, filters, sort_by="created_at", sort_order=-1)
         prompts = result.items
         total = result.total
     

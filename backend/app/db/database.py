@@ -335,6 +335,7 @@ class DatabaseManager:
             from app.models.prompt import Prompt
             from app.models.category import Category
             from app.models.favorite import Favorite
+            from app.models.unlock import Unlock
             from app.models.device import DeviceUser
             from app.models.admin import Admin
             from app.models.settings import AppSettings
@@ -342,10 +343,10 @@ class DatabaseManager:
             
             await init_beanie(
                 database=self.database,
-                document_models=[Prompt, Category, Favorite, DeviceUser, Admin, AppSettings, SocialLink]
+                document_models=[Prompt, Category, Favorite, Unlock, DeviceUser, Admin, AppSettings, SocialLink]
             )
             print(f"✅ Beanie ODM initialized with database: {self.database_name}")
-            print(f"🔧 Initialized models: Prompt, Category, Favorite, DeviceUser, Admin, AppSettings, SocialLink")
+            print(f"🔧 Initialized models: Prompt, Category, Favorite, Unlock, DeviceUser, Admin, AppSettings, SocialLink")
         except Exception as e:
             print(f"❌ Failed to initialize Beanie: {e}")
             raise

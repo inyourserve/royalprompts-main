@@ -1,3 +1,4 @@
+// error pages
 "use client";
 
 import { useEffect } from "react";
@@ -5,6 +6,7 @@ import GridShape from "@/components/common/GridShape";
 import Image from "next/image";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
+import { pages } from "next/dist/build/templates/app-page";
 
 export default function Error({
   error,

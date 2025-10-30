@@ -29,32 +29,31 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
         """Get prompt by slug"""
         return await self.repository.find_one({"slug": slug})
     
-    async def get_by_category(self, category_id: str, limit: int = 20) -> List[Prompt]:
-        """Get prompts by category"""
+    async def get_by_category(self, category_id: str, skip: int = 0, limit: int = 20) -> List[Prompt]:
+        """Get prompts by category with pagination"""
         return await self.repository.find_many({
             "category_id": category_id,
             "status": PromptStatus.PUBLISHED,
             "is_active": True
-        }, limit=limit)
+        }, skip=skip, limit=limit, sort=[("created_at", -1)])
     
     # Removed get_by_type method since PromptType enum was removed
     
     async def get_featured(self, limit: int = 10) -> List[Prompt]:
-        """Get featured prompts"""
+        """Get featured prompts (sorted by newest first)"""
         return await self.get_by_filter({
             "is_featured": True,
             "status": PromptStatus.PUBLISHED,
             "is_active": True
-        }, limit=limit)
+        }, limit=limit, sort=[("created_at", -1)])
     
     async def get_trending(self, limit: int = 10) -> List[Prompt]:
-        """Get trending prompts (sorted by recent views and likes)"""
-        # This is a simplified trending algorithm
-        # In production, you might want to use a more sophisticated algorithm
+        """Get trending prompts (sorted by newest first)"""
+        # Show newest prompts in trending category
         return await self.get_by_filter({
             "status": PromptStatus.PUBLISHED,
             "is_active": True
-        }, limit=limit, sort=[("views_count", -1), ("likes_count", -1)])
+        }, limit=limit, sort=[("created_at", -1)])
     
     async def get_recent(self, limit: int = 10) -> List[Prompt]:
         """Get recent prompts"""
@@ -64,14 +63,15 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
         }, limit=limit, sort=[("created_at", -1)])
     
     async def get_popular(self, limit: int = 10) -> List[Prompt]:
-        """Get popular prompts (sorted by likes and views)"""
+        """Get popular prompts (sorted by newest first)"""
+        # Show newest prompts in popular category
         return await self.get_by_filter({
             "status": PromptStatus.PUBLISHED,
             "is_active": True
-        }, limit=limit, sort=[("likes_count", -1), ("views_count", -1)])
+        }, limit=limit, sort=[("created_at", -1)])
     
-    async def search(self, query: str, limit: int = 20) -> List[Prompt]:
-        """Search prompts by text"""
+    async def search(self, query: str, skip: int = 0, limit: int = 20) -> tuple[List[Prompt], int]:
+        """Search prompts by text with pagination"""
         search_filter = {
             "$or": [
                 {"title": {"$regex": query, "$options": "i"}},
@@ -83,7 +83,18 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
             "is_active": True
         }
         
-        return await self.repository.find_many(search_filter, limit=limit)
+        # Get total count
+        total = await self.repository.count(search_filter)
+        
+        # Get paginated results with sorting
+        prompts = await self.repository.find_many(
+            search_filter, 
+            skip=skip, 
+            limit=limit,
+            sort=[("created_at", -1)]
+        )
+        
+        return prompts, total
     
     async def get_by_filter(
         self, 
@@ -92,7 +103,10 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
         sort: Optional[List[tuple]] = None
     ) -> List[Prompt]:
         """Get prompts by custom filter"""
-        return await self.repository.find_many(filters)
+        # Default sort by newest first if no sort specified
+        if sort is None:
+            sort = [("created_at", -1)]
+        return await self.repository.find_many(filters, skip=0, limit=limit, sort=sort)
     
     async def increment_view(self, prompt_id: str) -> None:
         """Increment prompt view count"""
@@ -136,7 +150,7 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
         return prompt
     
     async def get_related_prompts(self, prompt: Prompt, limit: int = 5) -> List[Prompt]:
-        """Get related prompts based on category and tags"""
+        """Get related prompts based on category and tags (sorted by newest first)"""
         # Find prompts with same category or similar tags
         related_filter = {
             "$or": [
@@ -148,7 +162,7 @@ class PromptService(BaseService[Prompt, PromptCreate, PromptUpdate]):
             "is_active": True
         }
         
-        return await self.repository.find_many(related_filter)
+        return await self.repository.find_many(related_filter, skip=0, limit=limit, sort=[("created_at", -1)])
     
     async def get_stats(self) -> Dict[str, Any]:
         """Get prompt statistics"""

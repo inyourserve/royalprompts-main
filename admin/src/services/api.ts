@@ -3,7 +3,7 @@
  * Handles all backend communication with proper authentication
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://royalprompts.online:8443';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface ApiResponse<T = any> {
   success?: boolean;

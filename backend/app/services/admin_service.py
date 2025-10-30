@@ -115,6 +115,8 @@ class AdminService(BaseService[Admin, dict, dict]):
         from app.services.prompt_service import PromptService
         from app.services.category_service import CategoryService
         from app.services.device_service import DeviceService
+        from app.models.unlock import Unlock
+        from app.models.favorite import Favorite
         
         prompt_service = PromptService()
         category_service = CategoryService()
@@ -124,6 +126,10 @@ class AdminService(BaseService[Admin, dict, dict]):
         total_prompts = await prompt_service.count()
         total_categories = await category_service.count()
         device_stats = await device_service.get_user_stats()
+        
+        # Count total unlocks and favorites
+        total_unlocks = await Unlock.find().count()
+        total_favorites = await Favorite.find().count()
         
         # Get prompts by category - simplified for now
         prompts_by_category = {
@@ -135,8 +141,8 @@ class AdminService(BaseService[Admin, dict, dict]):
             "total_categories": total_categories,
             "total_devices": device_stats["total_devices"],
             "active_devices_today": device_stats["active_today"],
-            "total_favorites": 0,  # TODO: Calculate from device users
-            "total_unlocks": 0,    # TODO: Calculate from device users
+            "total_favorites": total_favorites,
+            "total_unlocks": total_unlocks,
             "prompts_by_category": prompts_by_category,
             "recent_activity": []  # TODO: Add recent activity tracking
         }

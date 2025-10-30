@@ -23,7 +23,7 @@ async def get_admin_categories(
 ):
     """Get categories for admin management"""
     category_service = CategoryService()
-    pagination = PaginationParams(skip=(page-1)*limit, limit=limit)
+    pagination = PaginationParams(page=page, size=limit)
     
     filters = {}
     if is_active is not None:
