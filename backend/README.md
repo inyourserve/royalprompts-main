@@ -186,3 +186,4 @@ docker-compose logs -f
 - ✅ Comprehensive API documentation
 
 **Perfect for building Royal Prompts mobile app and admin panel!** 🚀
+# Deployment trigger
