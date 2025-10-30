@@ -99,3 +99,4 @@ This landing page includes all the essential pages required for app store submis
 ## License
 
 This project is part of the RoyalPrompt application suite.
+# Deployment trigger
