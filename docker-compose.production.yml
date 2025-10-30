@@ -19,15 +19,15 @@ services:
     networks:
       - royalprompts_network
 
-  # FastAPI Backend - Internal exposure only
+  # FastAPI Backend - Exposed on port 8000
   backend:
     build: 
       context: ./backend
       dockerfile: Dockerfile
     container_name: royalprompts_backend
     restart: unless-stopped
-    expose:
-      - "8000"  # Internal exposure only
+    ports:
+      - "0.0.0.0:8000:8000"  # Expose to host
     environment:
       MONGODB_URL: ${MONGODB_URL}
       SECRET_KEY: ${SECRET_KEY:-your-super-secret-key-change-this-in-production}
