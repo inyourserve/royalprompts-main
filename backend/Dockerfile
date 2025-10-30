@@ -24,12 +24,14 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application code
 COPY . .
 
-# Create uploads directory
-RUN mkdir -p uploads/images uploads/thumbnails
+# Create uploads directory with proper permissions
+RUN mkdir -p /app/uploads/images /app/uploads/thumbnails /app/uploads/temp
 
-# Create non-root user
+# Create non-root user and set permissions
 RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app \
+    && chmod -R 755 /app/uploads
+
 USER appuser
 
 # Expose port

@@ -276,15 +276,21 @@ class FileUploadManager:
     """File upload management utility"""
     
     def __init__(self):
-        self.upload_dir = settings.UPLOAD_DIR  # Use standard UPLOAD_DIR setting
+        self.upload_dir = settings.upload_dir_path  # Use correct path (handles Docker vs local)
         self.max_file_size = settings.MAX_FILE_SIZE
         self.allowed_types = settings.ALLOWED_FILE_TYPES
         
+        print(f"📁 Upload directory: {self.upload_dir}")
+        
         # Create upload directory if it doesn't exist
-        os.makedirs(self.upload_dir, exist_ok=True)
-        os.makedirs(f"{self.upload_dir}/images", exist_ok=True)
-        os.makedirs(f"{self.upload_dir}/thumbnails", exist_ok=True)
-        os.makedirs(f"{self.upload_dir}/temp", exist_ok=True)
+        try:
+            os.makedirs(self.upload_dir, exist_ok=True)
+            os.makedirs(f"{self.upload_dir}/images", exist_ok=True)
+            os.makedirs(f"{self.upload_dir}/thumbnails", exist_ok=True)
+            os.makedirs(f"{self.upload_dir}/temp", exist_ok=True)
+            print(f"✅ Upload directories created successfully")
+        except Exception as e:
+            print(f"❌ Error creating upload directories: {e}")
     
     async def validate_file(self, file: UploadFile) -> None:
         """Validate uploaded file"""

@@ -67,12 +67,14 @@ jobs:
         script: |
           cd /root/royalprompts-main
           
-          # Create persistent uploads directory
-          echo "📁 Creating uploads directory..."
-          mkdir -p /var/royalprompts/uploads/images
-          mkdir -p /var/royalprompts/uploads/thumbnails
-          mkdir -p /var/royalprompts/uploads/temp
-          chmod -R 755 /var/royalprompts/uploads
+          # Ensure volume has correct permissions (appuser in container has UID 1000)
+          echo "📁 Setting volume permissions..."
+          if docker volume inspect royalprompts-main_uploads_data > /dev/null 2>&1; then
+            VOLUME_PATH=$(docker volume inspect royalprompts-main_uploads_data --format '{{ .Mountpoint }}')
+            chown -R 1000:1000 "$VOLUME_PATH" 2>/dev/null || echo "⚠️  Could not change ownership (may need root)"
+            chmod -R 755 "$VOLUME_PATH"
+            echo "✅ Volume permissions set for $VOLUME_PATH"
+          fi
           
           # Create .env file with production configuration
           cat > .env << EOF
