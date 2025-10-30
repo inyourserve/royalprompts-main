@@ -177,6 +177,6 @@ def setup_middleware(app):
         app.add_middleware(RequestLoggingMiddleware)
     
     # Add rate limiting middleware (only in production)
-    if settings.ENVIRONMENT == "production":
-        # Smart rate limiting with different limits per endpoint type
-        app.add_middleware(RateLimitMiddleware)
+    # DISABLED - Rate limiting removed
+    # if settings.ENVIRONMENT == "production":
+    #     app.add_middleware(RateLimitMiddleware)
