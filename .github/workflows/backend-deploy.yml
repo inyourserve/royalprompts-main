@@ -87,8 +87,8 @@ jobs:
           DOCKER_ENV=true
           EOF
           
-          # Start backend using docker-compose
-          docker-compose -f docker-compose.production.yml up -d backend
+          # Build and start backend using docker-compose
+          docker-compose -f docker-compose.production.yml up -d --build backend
           
           # Wait for backend to be healthy
           echo "Waiting for backend to be healthy..."
