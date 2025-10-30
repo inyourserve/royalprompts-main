@@ -93,16 +93,28 @@ async def unlock_prompt(
     device_user = Depends(get_authenticated_device_user)
 ):
     """Unlock premium prompt (matches 'Unlock to View Prompt' button)"""
+    print(f"🔓 Unlock request received: prompt_id={prompt_id}, device_id={device_user.device_id}")
+    
     prompt_service = PromptService()
     
     prompt = await prompt_service.get_by_id(prompt_id)
     if not prompt:
+        print(f"❌ Prompt not found: {prompt_id}")
         raise HTTPException(status_code=404, detail="Prompt not found")
     
+    print(f"📝 Creating unlock record for prompt: {prompt.title}")
+    
     # Always create unlock record (for ad tracking)
-    await device_user.unlock_prompt(prompt_id)
+    success = await device_user.unlock_prompt(prompt_id)
+    
+    if success:
+        print(f"✅ Unlock completed successfully")
+    else:
+        print(f"⚠️  Unlock returned False")
     
     return {
         "message": "Prompt unlocked successfully",
-        "is_unlocked": True
+        "is_unlocked": True,
+        "prompt_id": prompt_id,
+        "device_id": device_user.device_id
     }

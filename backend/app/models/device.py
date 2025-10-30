@@ -80,11 +80,18 @@ class DeviceUser(Document):
         """Unlock a prompt for this device (creates unlock record for ad tracking)"""
         from app.models.unlock import Unlock
         
-        # Always create a new unlock record (no duplicate checking)
-        # Each unlock = one ad view = revenue
-        unlock = Unlock(
-            device_id=self.device_id,
-            prompt_id=prompt_id
-        )
-        await unlock.create()
-        return True  # Always newly unlocked
+        try:
+            # Always create a new unlock record (no duplicate checking)
+            # Each unlock = one ad view = revenue
+            unlock = Unlock(
+                device_id=self.device_id,
+                prompt_id=prompt_id
+            )
+            result = await unlock.create()
+            print(f"✅ Unlock saved: device={self.device_id}, prompt={prompt_id}, id={result.id}")
+            return True  # Always newly unlocked
+        except Exception as e:
+            print(f"❌ Failed to save unlock: {e}")
+            print(f"   device_id: {self.device_id}")
+            print(f"   prompt_id: {prompt_id}")
+            raise
