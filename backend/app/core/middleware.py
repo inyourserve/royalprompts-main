@@ -59,17 +59,30 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Simple rate limiting middleware"""
     
-    def __init__(self, app, calls: int = 100, period: int = 60):
+    def __init__(self, app, calls: int = 1000, period: int = 60):
         super().__init__(app)
         self.calls = calls
         self.period = period
         self.clients = {}
+        # Paths to exclude from rate limiting
+        self.exclude_paths = ["/health", "/docs", "/redoc", "/openapi.json"]
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        client_ip = request.client.host if request.client else "unknown"
+        # Skip rate limiting for health checks and docs
+        if any(request.url.path.startswith(path) for path in self.exclude_paths):
+            return await call_next(request)
+        
+        # Get real client IP from X-Forwarded-For header (from Nginx proxy)
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        if forwarded_for:
+            # X-Forwarded-For can be a comma-separated list, take the first IP
+            client_ip = forwarded_for.split(",")[0].strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+        
         current_time = time.time()
         
-        # Clean old entries
+        # Clean old entries (entries older than period)
         self.clients = {
             ip: (calls, start_time) 
             for ip, (calls, start_time) in self.clients.items()
@@ -84,7 +97,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     from fastapi import HTTPException, status
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                        detail="Rate limit exceeded"
+                        detail=f"Rate limit exceeded. Max {self.calls} requests per {self.period} seconds."
                     )
                 self.clients[client_ip] = (calls_made + 1, start_time)
             else:
@@ -93,6 +106,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             self.clients[client_ip] = (1, current_time)
         
         response = await call_next(request)
+        
+        # Add rate limit headers for transparency
+        response.headers["X-RateLimit-Limit"] = str(self.calls)
+        response.headers["X-RateLimit-Remaining"] = str(self.calls - self.clients.get(client_ip, (0, 0))[0])
+        
         return response
 
 
@@ -120,4 +138,5 @@ def setup_middleware(app):
     
     # Add rate limiting middleware (only in production)
     if settings.ENVIRONMENT == "production":
-        app.add_middleware(RateLimitMiddleware, calls=100, period=60)
+        # Allow 1000 requests per minute per IP (generous for API usage)
+        app.add_middleware(RateLimitMiddleware, calls=1000, period=60)
